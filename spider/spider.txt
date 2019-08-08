@@ -1,0 +1,40 @@
+spider原理： 获取网页并提取和保存信息的自动化过程
+
+获取网页-> 提取信息-> 保存数据
+
+一、
+1. 获取网页
+库： requests/ urllib
+
+2.提取信息
+库： re/Beautiful soup/ Xpath/ pyquery/ lxml
+
+3. 保存数据
+MySQL/ MongoDB
+
+
+二、
+爬虫框架
+Scrapy/ pyspider
+
+三、
+反爬学习
+常见的反爬策略主要有：
+
+IP限制
+UA限制
+Cookie限制
+资源随机化存储
+动态加载技术
+……
+
+对应的反爬处理手段主要有：
+IP代理池技术
+用户代理池技术
+Cookie池保存与处理
+自动触发技术
+抓包分析技术+自动触发技术
+
+四、
+分布式爬虫
+Scrapy+redis架构手段
