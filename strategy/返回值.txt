@@ -54,6 +54,13 @@ roe_waa	float	Y	加权平均净资产收益率
 roe_dt	float	Y	净资产收益率(扣除非经常损益)
 
 
+个股资金流向
+接口：moneyflow
+描述：获取沪深A股票资金流向数据，分析大单小单成交情况，用于判别资金动向
+net_mf_vol	int	Y	净流入量（手）
+net_mf_amount	float	Y	净流入额（万元）
+
+
 
 数据源：
 1、行情数据
