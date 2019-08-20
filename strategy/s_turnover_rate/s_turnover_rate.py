@@ -36,9 +36,9 @@ ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
 # 设置今天日期
-today = (datetime.date.today() - datetime.timedelta( days=4 ))
-yday = today - datetime.timedelta( days=1 )
-dbfday = today - datetime.timedelta( days=2 )
+today = (datetime.date.today() - datetime.timedelta( days=1 ))
+yday = today - datetime.timedelta( days=3 )
+dbfday = today - datetime.timedelta( days=4 )
 # 转为tushare格式的时间
 today = today.strftime( "%Y%m%d" )
 yday = yday.strftime( "%Y%m%d" )
@@ -167,7 +167,7 @@ def get_ma_filter():
 def get_final_selected_list():
     final_selected = pd.merge( tor_selected, tor_mafilter_selected, on='ts_code', sort=False,
                                left_index=False, right_index=False, how='inner' )
-    final_selected.to_excel( 'final_selected.xlsx' )
+    final_selected.to_excel( 'final_selected_' + today +'.xlsx' )
 
 
 if __name__ == "__main__":
