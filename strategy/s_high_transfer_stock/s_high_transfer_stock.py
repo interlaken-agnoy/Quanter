@@ -23,7 +23,7 @@ pro = ts.pro_api()
 
 today = '20190813'
 
-#设置参数边界
+# 设置参数边界
 ht_bound = {'股价(元)': 25,
             '每股资本公积(元)': 2,
             '每股收益(元)': 0.5,
@@ -33,7 +33,7 @@ ht_bound = {'股价(元)': 25,
 
 # 股票名称列表
 # 接口：stock_basic
-share_basic = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,industry,list_date')
+share_basic = pro.stock_basic( exchange='', list_status='L', fields='ts_code,symbol,name,industry,list_date' )
 share_basic.to_excel( "const_share_basic.xlsx" )
 
 # 每日指标
@@ -42,11 +42,9 @@ basic = pro.daily_basic( ts_code='', trade_date=today,
                          fields='ts_code, close, pe, pe_ttm, pb, total_share, float_share, total_mv, circ_mv, turnover_rate_f' )
 basic.to_excel( "basic.xlsx" )
 
-
-merge_basic =  pd.merge( share_basic, basic, on='ts_code', sort=False,
-                              left_index=False, right_index=False, how='left' )
+merge_basic = pd.merge( share_basic, basic, on='ts_code', sort=False,
+                        left_index=False, right_index=False, how='left' )
 merge_basic.to_excel( "merge_basic.xlsx" )
-
 
 # 日线行情
 # 接口：daily
@@ -68,10 +66,11 @@ indicators = pd.read_excel( "const_indicator.xlsx" )
 '''
 
 # 如果停牌则设置当前价格为上一个交易日股价
-#merge_basic_daily['close'] = merge_basic_daily.apply( lambda x: x.pre_close if x.close == 0 else x.close, axis=1 )
+# merge_basic_daily['close'] = merge_basic_daily.apply( lambda x: x.pre_close if x.close == 0 else x.close, axis=1 )
 
 # 选取股票代码,当前价格,流通股本,总股本,流通市值,总市值
-ht_merge_basic_daily = merge_basic_daily[['ts_code','name', 'close_x', 'float_share', 'total_share', 'circ_mv', 'total_mv']]
+ht_merge_basic_daily = merge_basic_daily[
+    ['ts_code', 'name', 'close_x', 'float_share', 'total_share', 'circ_mv', 'total_mv']]
 
 # 选取股票代码,每股资本公积,每股收益
 ht_indicators = indicators[['ts_code', 'capital_rese_ps', 'eps']]
@@ -98,7 +97,7 @@ def get_high_transfer_share():
 
     ht_eps_ps = ht_data.eps >= ht_bound['每股收益(元)']  # 每股收益>=2毛
 
-    ht_total_mv = ht_data.total_mv <= ht_bound[ '总市值(亿)']  # 总市值<100亿
+    ht_total_mv = ht_data.total_mv <= ht_bound['总市值(亿)']  # 总市值<100亿
 
     # 取并集结果：
     ht_all_condition_meet = ht_close_x & ht_capital_rese_ps & ht_total_share & ht_float_share & ht_eps_ps & ht_total_mv
@@ -106,6 +105,7 @@ def get_high_transfer_share():
 
     ht_selected.index = range( len( ht_selected ) )  # 重新排序
     ht_selected.to_excel( "ht_selected.xlsx" )
+
 
 if __name__ == "__main__":
     get_high_transfer_share()

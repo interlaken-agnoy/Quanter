@@ -36,7 +36,7 @@ ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
 # 设置今天日期
-today = (datetime.date.today() - datetime.timedelta( days=3 ))
+today = (datetime.date.today() - datetime.timedelta( days=4 ))
 yday = today - datetime.timedelta( days=1 )
 dbfday = today - datetime.timedelta( days=2 )
 # 转为tushare格式的时间
