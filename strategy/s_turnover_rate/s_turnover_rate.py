@@ -37,8 +37,8 @@ pro = ts.pro_api()
 
 # 设置今天日期
 today = (datetime.date.today() - datetime.timedelta( days=1 ))
-yday = today - datetime.timedelta( days=3 )
-dbfday = today - datetime.timedelta( days=4 )
+yday = today - datetime.timedelta( days=2 )
+dbfday = today - datetime.timedelta( days=3 )
 # 转为tushare格式的时间
 today = today.strftime( "%Y%m%d" )
 yday = yday.strftime( "%Y%m%d" )
