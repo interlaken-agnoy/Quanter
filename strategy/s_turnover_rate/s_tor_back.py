@@ -30,15 +30,15 @@ ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta( days=3 ))
-t_b1 = t - datetime.timedelta( days=1 )
-t_b2 = t - datetime.timedelta( days=2 )
-t_b3 = t - datetime.timedelta( days=3 )
-t_b4 = t - datetime.timedelta( days=4 )
+t = (datetime.date.today() - datetime.timedelta( days=0 ))
+t_b1 = t - datetime.timedelta( days=3 )
+t_b2 = t - datetime.timedelta( days=4 )
+t_b3 = t - datetime.timedelta( days=5 )
+t_b4 = t - datetime.timedelta( days=6 )
 t_b5 = t - datetime.timedelta( days=7 )
 
 # t_n1为下一个交易日
-t_n1 = t + datetime.timedelta( days=1 )
+t_n1 = t + datetime.timedelta( days=0 )
 t_n1 = t_n1.strftime( "%Y%m%d" )
 
 # 转为tushare格式的时间
@@ -119,36 +119,36 @@ def factor_screen():  # 按策略筛选换手率
     ftor3 = merge['turnover_rate_' + t_b2] <= merge['turnover_rate_' + t_b3]
 
     # 换手率 t-5<t-4<t-3
-    ftor4 = merge['turnover_rate_' + t_b5] <= merge['turnover_rate_' + t_b4]
-    ftor5 = merge['turnover_rate_' + t_b4] <= merge['turnover_rate_' + t_b3]
+    # ftor4 = merge['turnover_rate_' + t_b5] <= merge['turnover_rate_' + t_b4]
+    # ftor5 = merge['turnover_rate_' + t_b4] <= merge['turnover_rate_' + t_b3]
 
     # con3 = merge.close <= turnover_rarion_bound['股价(元)上限']  # 股价
     # con4 = merge.close >= turnover_rarion_bound['股价(元)下限']  # 股价
     # con5 = merge.pe <= turnover_rarion_bound['市盈率(pe)上限']  # 市盈率上限
     # con6 = merge.pe > turnover_rarion_bound['市盈率(pe)下限']  # 市盈率下限
-    # con7 = merge.turnover_rate_dbfday <= turnover_rarion_bound['前日换手率']  # 前天换手率小于6%
+    ftor6 = merge['turnover_rate_' + t_b3] >= turnover_rarion_bound['前日换手率']  # 前天换手率小于6%
     # con8 = merge.turnover_rate_tday <= turnover_rarion_bound["今日换手率上限"]  # 前天换手率大于6%
 
-    factor_screen_selected = merge[ftor1 & ftor2 & ftor3 & ftor4 & ftor5]
+    factor_screen_selected = merge[ftor1 & ftor2 & ftor3 & ftor6]
     factor_screen_selected.to_excel( 'factor_screen_selected_' + t + '.xlsx' )
 
     return factor_screen_selected
 
 
 def get_ma_filter():
-    ma10_filter = pd.DataFrame()
+    ma_filter = pd.DataFrame()
     for ts_code in factor_screen_selected['ts_code']:
         print( "正在计算:", ts_code )
-        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[10] )[
-            ['ts_code', 'close', 'ma10']]
-        ma10_filter = ma10_filter.append( df.head( 1 ) )  # 取第一行为今天的10日均线数据
+        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20] )[
+            ['ts_code', 'close', 'ma20']]
+        ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的10日均线数据
     print( "列表factor_screen_selected循环结束！！！" )
 
     # 筛选运行在10日均线的股票
-    fator = (ma10_filter.close >= ma10_filter.ma10)
-    ma10_filter = ma10_filter[fator]
+    fator = (ma_filter.close >= ma_filter.ma10)
+    ma_filter = ma_filter[fator]
 
-    final_selected = pd.merge( factor_screen_selected, ma10_filter, on='ts_code', sort=False,
+    final_selected = pd.merge( ma_filter, factor_screen_selected, on='ts_code', sort=False,
                                left_index=False, right_index=False, how='left' )
     final_selected.to_excel( "final_selected.xlsx" )
 
@@ -159,4 +159,4 @@ if __name__ == "__main__":
     merge_t_basic = get_today_basic()
     merge = get_turnover_rate_before()
     factor_screen_selected = factor_screen()
-    # final_selected = get_ma_filter()
+    final_selected = get_ma_filter()
