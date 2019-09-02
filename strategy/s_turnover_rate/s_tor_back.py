@@ -145,7 +145,7 @@ def get_ma_filter():
     print( "列表factor_screen_selected循环结束！！！" )
 
     # 筛选运行在10日均线的股票
-    fator = (ma_filter.close >= ma_filter.ma10)
+    fator = (ma_filter.close >= ma_filter.ma20)
     ma_filter = ma_filter[fator]
 
     final_selected = pd.merge( ma_filter, factor_screen_selected, on='ts_code', sort=False,
