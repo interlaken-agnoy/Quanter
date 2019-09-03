@@ -51,7 +51,7 @@ t_b5 = t_b5.strftime( "%Y%m%d" )
 
 trade_data = [t_b1, t_b2, t_b3, t_b4, t_b5]
 
-turnover_rarion_bound = {"今日换手率下限": 3,
+turnover_rarion_bound = {"今日换手率下限": 5,
                          "今日换手率上限": 6,
                          '今日涨跌幅下限': -4,
                          '今日涨跌幅上限': 4,
@@ -126,7 +126,7 @@ def factor_screen():  # 按策略筛选换手率
     # con4 = merge.close >= turnover_rarion_bound['股价(元)下限']  # 股价
     # con5 = merge.pe <= turnover_rarion_bound['市盈率(pe)上限']  # 市盈率上限
     # con6 = merge.pe > turnover_rarion_bound['市盈率(pe)下限']  # 市盈率下限
-    ftor6 = merge['turnover_rate_' + t_b3] >= turnover_rarion_bound['前日换手率']  # 前天换手率小于6%
+    ftor6 = merge['turnover_rate_' + t] >= turnover_rarion_bound['今日换手率下限']  # 前天换手率小于6%
     # con8 = merge.turnover_rate_tday <= turnover_rarion_bound["今日换手率上限"]  # 前天换手率大于6%
 
     factor_screen_selected = merge[ftor1 & ftor2 & ftor3 & ftor6]
@@ -139,13 +139,13 @@ def get_ma_filter():
     ma_filter = pd.DataFrame()
     for ts_code in factor_screen_selected['ts_code']:
         print( "正在计算:", ts_code )
-        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20] )[
-            ['ts_code', 'close', 'ma20']]
+        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[10] )[
+            ['ts_code', 'close', 'ma10']]
         ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的10日均线数据
     print( "列表factor_screen_selected循环结束！！！" )
 
     # 筛选运行在10日均线的股票
-    fator = (ma_filter.close >= ma_filter.ma20)
+    fator = (ma_filter.close >= ma_filter.ma10)
     ma_filter = ma_filter[fator]
 
     final_selected = pd.merge( ma_filter, factor_screen_selected, on='ts_code', sort=False,
