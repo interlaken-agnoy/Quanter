@@ -14,7 +14,7 @@ t-5
 
 换算率满足如下条件：
 t-5<t-4<t-3
-t-3>t-2>t_b1>t
+t-3>t-2>t_b1>t, 今日收盘价大于ma10， 今日换手率大于5.5%
 '''
 
 import datetime
@@ -68,7 +68,7 @@ factor_screen_selected = pd.DataFrame()
 final_selected = pd.DataFrame()
 
 # 获取股票代码，名字
-name_list = pro.stock_basic( exchange='', list_status='L', fields='ts_code,name,industry' )
+name_list = pro.stock_basic( exchange='', list_status='L', fields='ts_code,name, area, industry' )
 
 
 # 获取今日收盘数据
