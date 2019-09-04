@@ -30,15 +30,15 @@ ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta( days=2 ))
-t_b1 = t - datetime.timedelta( days=3 )
-t_b2 = t - datetime.timedelta( days=4 )
+t = (datetime.date.today() - datetime.timedelta( days=0 ))
+t_b1 = t - datetime.timedelta( days=1 )
+t_b2 = t - datetime.timedelta( days=2 )
 t_b3 = t - datetime.timedelta( days=5 )
 t_b4 = t - datetime.timedelta( days=6 )
 t_b5 = t - datetime.timedelta( days=7 )
 
 # t_n1为下一个交易日
-t_n1 = t + datetime.timedelta( days=1 )
+t_n1 = t + datetime.timedelta( days=0 )
 t_n1 = t_n1.strftime( "%Y%m%d" )
 
 # 转为tushare格式的时间
@@ -51,7 +51,7 @@ t_b5 = t_b5.strftime( "%Y%m%d" )
 
 trade_data = [t_b1, t_b2, t_b3, t_b4, t_b5]
 
-turnover_rarion_bound = {"今日换手率下限": 5,
+turnover_rarion_bound = {"今日换手率下限": 5.5,
                          "今日换手率上限": 6,
                          '今日涨跌幅下限': -4,
                          '今日涨跌幅上限': 4,
