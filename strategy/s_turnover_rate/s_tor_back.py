@@ -30,7 +30,7 @@ ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta( days=0 ))
+t = (datetime.date.today() - datetime.timedelta( days=2 ))
 t_b1 = t - datetime.timedelta( days=3 )
 t_b2 = t - datetime.timedelta( days=4 )
 t_b3 = t - datetime.timedelta( days=5 )
@@ -38,7 +38,7 @@ t_b4 = t - datetime.timedelta( days=6 )
 t_b5 = t - datetime.timedelta( days=7 )
 
 # t_n1为下一个交易日
-t_n1 = t + datetime.timedelta( days=0 )
+t_n1 = t + datetime.timedelta( days=1 )
 t_n1 = t_n1.strftime( "%Y%m%d" )
 
 # 转为tushare格式的时间
@@ -150,7 +150,7 @@ def get_ma_filter():
 
     final_selected = pd.merge( ma_filter, factor_screen_selected, on='ts_code', sort=False,
                                left_index=False, right_index=False, how='left' )
-    final_selected.to_excel( "final_selected.xlsx" )
+    final_selected.to_excel( 'final_selected_' + t + '.xlsx' )
 
     return final_selected
 
