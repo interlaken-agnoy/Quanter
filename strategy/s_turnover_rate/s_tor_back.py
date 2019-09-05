@@ -1,20 +1,22 @@
 # coding:utf-8
 # Created : 2019-08-29
-# updated : 2019-08-29
+# updated : 2019-09-05
 # Author：Ethan Wang
 
 '''
 选股策略：按当前6个交易日的换手率筛选
 t (今日换手率)
 t_b1
-t-2
-t-3(MAX)
-t-4
-t-5
+t_b2
+t_b3(MAX)
+t_b4
+t_b5
 
-换算率满足如下条件：
-t-5<t-4<t-3
-t-3>t-2>t_b1>t, 今日收盘价大于ma10， 今日换手率大于5.5%
+换算率满足如下条件： 最近4个交易日换手率依次递减且今日收盘价大于10日均线
+1.t-3>t-2>t_b1>t
+2.今日收盘价大于ma10
+3.今日换手率大于5%小于20%
+4.股价介于6~100元之间
 '''
 
 import datetime
@@ -30,15 +32,15 @@ ts.set_token('33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668')
 pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta(days=3))
-t_b1 = t - datetime.timedelta(days=3)
-t_b2 = t - datetime.timedelta(days=4)
-t_b3 = t - datetime.timedelta(days=5)
+t = (datetime.date.today() - datetime.timedelta(days=0))
+t_b1 = t - datetime.timedelta(days=1)
+t_b2 = t - datetime.timedelta(days=2)
+t_b3 = t - datetime.timedelta(days=3)
 t_b4 = t - datetime.timedelta(days=6)
 t_b5 = t - datetime.timedelta(days=7)
 
 # t_n1为下一个交易日
-t_n1 = t + datetime.timedelta(days=1)
+t_n1 = t + datetime.timedelta(days=0)
 t_n1 = t_n1.strftime("%Y%m%d")
 
 # 转为tushare格式的时间
@@ -56,7 +58,7 @@ turnover_rarion_bound = {"今日换手率下限" : 5,
                          '今日涨跌幅下限' : -4,
                          '今日涨跌幅上限' : 4,
                          '流通股本(亿)' : 3,
-                         '股价(元)上限' : 40,
+                         '股价(元)上限' : 100,
                          '股价(元)下限' : 6,
                          '市盈率(pe)上限' : 100,
                          '市盈率(pe)下限' : 20,
