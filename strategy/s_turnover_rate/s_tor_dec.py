@@ -136,7 +136,7 @@ def factor_screen() :  # 按策略筛选换手率
     # ftor12 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
 
     factor_screen_selected = merge[ftor1  & ftor2 & ftor3 & ftor6 & ftor7 & ftor8 & ftor9]
-    factor_screen_selected.to_excel('factor_screen_selected_' + t + '.xlsx')
+    factor_screen_selected.to_excel('factor_screen_dec_selected_' + t + '.xlsx')
 
     return factor_screen_selected
 
@@ -148,7 +148,7 @@ def get_ma_filter() :
         df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[10])[
             ['ts_code', 'close', 'ma10']]
         ma_filter = ma_filter.append(df.head(1))  # 取第一行为今天的10日均线数据
-    print("列表factor_screen_selected循环结束！！！")
+    print("换手率递减策略循环结束！！！")
 
     # 筛选运行在10日均线的股票
     fator = (ma_filter.close >= ma_filter.ma10)
@@ -156,7 +156,7 @@ def get_ma_filter() :
 
     final_selected = pd.merge(ma_filter, factor_screen_selected, on='ts_code', sort=False,
                               left_index=False, right_index=False, how='left')
-    final_selected.to_excel('final_selected_' + t + '.xlsx')
+    final_selected.to_excel('final_dec_selected_' + t + '.xlsx')
 
     return final_selected
 
