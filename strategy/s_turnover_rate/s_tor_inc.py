@@ -117,7 +117,7 @@ def get_turnover_rate_before() :
 
 def factor_screen() :  # 按策略筛选换手率
     # 换手率 t>t-1>t-2>t-3
-    ftor1 = merge['turnover_rate_' + t] >= merge['turnover_rate_' + t_b1]
+    ftor1 = merge['turnover_rate_' + t] <= merge['turnover_rate_' + t_b1]
     ftor2 = merge['turnover_rate_' + t_b1] >= merge['turnover_rate_' + t_b2]
     ftor3 = merge['turnover_rate_' + t_b2] >= merge['turnover_rate_' + t_b3]
 
@@ -131,11 +131,11 @@ def factor_screen() :  # 按策略筛选换手率
     # 基本面
     ftor8 = merge.close <= turnover_rarion_bound['股价(元)上限']
     ftor9 = merge.close >= turnover_rarion_bound['股价(元)下限']
-    # ftor10 = merge.pe <= turnover_rarion_bound['市盈率(pe)上限']
-    # ftor11 = merge.pe >= turnover_rarion_bound['市盈率(pe)下限']
-    # ftor12 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
+    ftor10 = merge.pe <= turnover_rarion_bound['市盈率(pe)上限']
+    ftor11 = merge.pe >= turnover_rarion_bound['市盈率(pe)下限']
+    ftor12 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
 
-    factor_screen_selected = merge[ftor1  & ftor2 & ftor3 & ftor6 & ftor7 & ftor8 & ftor9]
+    factor_screen_selected = merge[ftor1  & ftor2 & ftor3 & ftor6 & ftor7 & ftor8 & ftor9 & ftor10 & ftor11 & ftor12 ]
     factor_screen_selected.to_excel('factor_screen_inc_selected_' + t + '.xlsx')
 
     return factor_screen_selected
