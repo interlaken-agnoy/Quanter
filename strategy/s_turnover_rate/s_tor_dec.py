@@ -34,13 +34,13 @@ pro = ts.pro_api()
 # 设置时间，t为今日，t_b1为昨日
 t = (datetime.date.today() - datetime.timedelta(days=0))
 t_b1 = t - datetime.timedelta(days=1)
-t_b2 = t - datetime.timedelta(days=2)
-t_b3 = t - datetime.timedelta(days=3)
+t_b2 = t - datetime.timedelta(days=4)
+t_b3 = t - datetime.timedelta(days=5)
 t_b4 = t - datetime.timedelta(days=6)
 t_b5 = t - datetime.timedelta(days=7)
 
 # t_n1为下一个交易日
-t_n1 = t + datetime.timedelta(days=0)
+t_n1 = t + datetime.timedelta(days=1)
 t_n1 = t_n1.strftime("%Y%m%d")
 
 # 转为tushare格式的时间
@@ -60,7 +60,7 @@ turnover_rarion_bound = {"今日换手率下限" : 4,
                          '流通股本(亿)' : 3,
                          '股价(元)上限' : 100,
                          '股价(元)下限' : 5,
-                         '市盈率(pe)上限' : 100,
+                         '市盈率(pe)上限' : 200,
                          '市盈率(pe)下限' : 20,
                          '市盈率(pe_ttm)下限' : 0,
                          '昨日换手率' : 3,
@@ -91,7 +91,7 @@ def get_today_basic() :  # 得到今日收盘数据表
     merge_t_basic = pd.merge(merge_t_basic, t_n1_pctchg, on='ts_code', sort=False,
                              left_index=False, right_index=False, how='left')
 
-    merge_t_basic.to_excel('merge_t_basic_' + t + '.xlsx')
+    # merge_t_basic.to_excel('merge_t_basic_' + t + '.xlsx')
 
     return merge_t_basic
 
@@ -110,7 +110,7 @@ def get_turnover_rate_before() :
                              left_index=False, right_index=False, how='inner')
         merge.rename(columns={'turnover_rate' : 'turnover_rate_' + str}, inplace=True)
 
-    merge.to_excel('merge.xlsx')
+    # merge.to_excel('merge.xlsx')
 
     return merge
 
@@ -131,12 +131,12 @@ def factor_screen() :  # 按策略筛选换手率
     # 基本面
     ftor8 = merge.close <= turnover_rarion_bound['股价(元)上限']
     ftor9 = merge.close >= turnover_rarion_bound['股价(元)下限']
-    # ftor10 = merge.pe <= turnover_rarion_bound['市盈率(pe)上限']
-    # ftor11 = merge.pe >= turnover_rarion_bound['市盈率(pe)下限']
-    # ftor12 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
+    ftor10 = merge.pe <= turnover_rarion_bound['市盈率(pe)上限']
+    ftor11 = merge.pe >= turnover_rarion_bound['市盈率(pe)下限']
+    ftor12 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
 
-    factor_screen_selected = merge[ftor1  & ftor2 & ftor3 & ftor6 & ftor7 & ftor8 & ftor9]
-    factor_screen_selected.to_excel('factor_screen_dec_selected_' + t + '.xlsx')
+    factor_screen_selected = merge[ftor1  & ftor2 & ftor3 & ftor6 & ftor7 & ftor8 & ftor9 & ftor10 & ftor11 & ftor12]
+    # factor_screen_selected.to_excel('factor_screen_dec_selected_' + t + '.xlsx')
 
     return factor_screen_selected
 
