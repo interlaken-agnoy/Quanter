@@ -71,7 +71,7 @@ print( "净入金金额：", deposit[True] + withdrawal[True] )
 print( profit )
 
 # 已全部清仓的股票
-clearance_stocks = profit[~profit['证券名称'].str.contains( '中通国脉|中海达|顺灏股份')]
+clearance_stocks = profit[~profit['证券名称'].str.contains( '中通国脉|中海达|顺灏股份|华菱精工')]
 clearance_profit = clearance_stocks['盈利'].sum()
 print( '已清仓盈利', clearance_profit )
 
