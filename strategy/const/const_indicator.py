@@ -20,7 +20,7 @@ pd.set_option( 'max_colwidth', 200 )  # 设置value的显示长度为100，默�
 ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
-today = datetime.date.today()
+today = datetime.date.today() - datetime.timedelta(days=1)
 today = today.strftime( "%Y%m%d" )
 
 # 选取财报时间段
@@ -55,7 +55,7 @@ def get_fina_indicator():
             time.sleep(2)
             print( "异常了！！！！" )
 
-    indicator.to_excel( 'indicator_' + today + '.xlsx' )
+    # indicator.to_excel( 'indicator_' + today + '.xlsx' )
     return indicator
 
 
@@ -65,7 +65,7 @@ def get_daily_basic():  # 得到今日收盘数据
 
     daily_basic = pd.merge( share_list, basic, on='ts_code', sort=False,
                             left_index=False, right_index=False, how='left' )
-    daily_basic.to_excel( 'daily_basic_' + today + '.xlsx' )
+    # daily_basic.to_excel( 'daily_basic_' + today + '.xlsx' )
 
     return daily_basic
 
