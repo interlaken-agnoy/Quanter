@@ -143,7 +143,7 @@ def get_high_low_before():
 def merge_tor_high_low():
     merge = pd.merge( turnover_rate_before, high_low_before, on='ts_code', sort=False,
                       left_index=False, right_index=False, how='inner' )
-    merge.to_excel( 'merge_' + t + '.xlsx' )
+    merge.to_excel( 'merge_tor_high_low_' + t + '.xlsx' )
     return merge
 
 def factor_screen():  # 按策略筛选换手率
@@ -179,7 +179,7 @@ def get_ma_filter():
         df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[10] )[
             ['ts_code', 'close', 'ma10']]
         ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的10日均线数据
-    print( "换手率递减策略循环结束！！！" )
+    print( "策略计算结束！！！" )
 
     # 筛选运行在10日均线的股票
     fator = (ma_filter.close >= ma_filter.ma10)
