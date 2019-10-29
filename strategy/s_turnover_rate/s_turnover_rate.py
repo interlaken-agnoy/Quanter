@@ -33,8 +33,8 @@ pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
 t = (datetime.date.today() - datetime.timedelta( days=1 ))
-t_b1 = t - datetime.timedelta( days=1 )
-t_b2 = t - datetime.timedelta( days=2 )
+t_b1 = t - datetime.timedelta( days=3 )
+t_b2 = t - datetime.timedelta( days=4 )
 t_b3 = t - datetime.timedelta( days=5 )
 t_b4 = t - datetime.timedelta( days=6 )
 t_b5 = t - datetime.timedelta( days=7 )
@@ -51,7 +51,7 @@ t_b3 = t_b3.strftime( "%Y%m%d" )
 t_b4 = t_b4.strftime( "%Y%m%d" )
 t_b5 = t_b5.strftime( "%Y%m%d" )
 
-trade_data = [t_b1, t_b2, t_b3, t_b4, t_b5]
+trade_data = [t_b1, t_b2, t_b3]
 
 turnover_rarion_bound = {"今日换手率下限": 4,
                          "今日换手率上限": 20,
@@ -83,7 +83,23 @@ def get_today_basic():  # 得到今日收盘数据表
                               left_index=False, right_index=False, how='left' )
     merge_t_basic.rename( columns={'turnover_rate': 'turnover_rate_' + t}, inplace=True )
 
-    # 获取下一个交易日涨幅，回测用
+    # 获取昨日涨幅
+    t_b1_pctchg = pro.daily( ts_code='', trade_date=t_b1,  # 为了获取下一个交易日的涨幅
+                             fields='ts_code, pct_chg' )
+    t_b1_pctchg.rename( columns={'pct_chg': 'pct_chg_' + t_b1}, inplace=True )
+
+    merge_t_b1_basic = pd.merge( merge_t_basic, t_b1_pctchg, on='ts_code', sort=False,
+                              left_index=False, right_index=False, how='left' )
+
+    # 获取今日涨幅
+    t_pctchg = pro.daily( ts_code='', trade_date=t,  # 为了获取下一个交易日的涨幅
+                             fields='ts_code, pct_chg' )
+    t_pctchg.rename( columns={'pct_chg': 'pct_chg_' + t}, inplace=True )
+
+    merge_t_basic = pd.merge( merge_t_b1_basic, t_pctchg, on='ts_code', sort=False,
+                              left_index=False, right_index=False, how='left' )
+
+    # 获取明日涨幅，回测
     t_n1_pctchg = pro.daily( ts_code='', trade_date=t_n1,  # 为了获取下一个交易日的涨幅
                              fields='ts_code, pct_chg' )
     t_n1_pctchg.rename( columns={'pct_chg': 'pct_chg_' + t_n1}, inplace=True )
@@ -110,7 +126,7 @@ def get_turnover_rate_before():
                                              left_index=False, right_index=False, how='inner' )
         turnover_rate_before.rename( columns={'turnover_rate': 'turnover_rate_' + str}, inplace=True )
 
-    turnover_rate_before.to_excel( 'turnover_rate_before.xlsx' )
+    # turnover_rate_before.to_excel( 'turnover_rate_before.xlsx' )
 
     return turnover_rate_before
 
@@ -120,7 +136,7 @@ def get_high_low_before():
     high_low_before = pd.DataFrame()
 
     today_basic = pro.daily( ts_code='', trade_date=t,
-                             fields='ts_code, high, low' )
+                             fields='ts_code, high, low, open, pre_close' )
     today_basic.rename( columns={'high': 'high_' + t, 'low': 'low_' + t}, inplace=True )
 
     for str in trade_data:
@@ -135,7 +151,7 @@ def get_high_low_before():
 
         high_low_before.rename( columns={'high': 'high_' + str, 'low': 'low_' + str}, inplace=True )
 
-    high_low_before.to_excel( 'high_low_before.xlsx' )
+    # high_low_before.to_excel( 'high_low_before.xlsx' )
 
     return high_low_before
 
@@ -143,10 +159,12 @@ def get_high_low_before():
 def merge_tor_high_low():
     merge = pd.merge( turnover_rate_before, high_low_before, on='ts_code', sort=False,
                       left_index=False, right_index=False, how='inner' )
-    merge.to_excel( 'merge_tor_high_low_' + t + '.xlsx' )
+    # merge.to_excel( 'merge_tor_high_low_' + t + '.xlsx' )
     return merge
 
-def factor_screen():  # 按策略筛选换手率
+def factor_screen():
+
+#换手率
     # 换手率 t<t-1<t-2<t-3
     ftor1 = merge['turnover_rate_' + t] <= merge['turnover_rate_' + t_b1]
     ftor2 = merge['turnover_rate_' + t_b1] <= merge['turnover_rate_' + t_b2]
@@ -166,7 +184,36 @@ def factor_screen():  # 按策略筛选换手率
     ftor11 = merge.pe >= turnover_rarion_bound['市盈率(pe)下限']
     ftor12 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
 
-    factor_screen_selected = merge[ftor1 & ftor2 & ftor3 & ftor6 & ftor7 & ftor8 & ftor9 & ftor10 & ftor11 & ftor12]
+    # factor_screen_selected = merge[ftor1 & ftor2 & ftor3 & ftor6 & ftor7 & ftor8 & ftor9 & ftor10 & ftor11 & ftor12]
+
+
+
+# 寻找特定形态
+
+    #今日最高价>昨日最高价, 今日最低价 > 昨日最低价
+    p_ftor1 = merge['high_' + t] > merge['high_' + t_b1]
+    p_ftor2 = merge['low_' + t] > merge['low_' + t_b1]
+
+    #昨日最高价<前日最高价, 昨日最低价 < 前日最低价
+    p_ftor3 = merge['high_' + t_b1] < merge['high_' + t_b2]
+    p_ftor4 = merge['low_' + t_b1] < merge['low_' + t_b2]
+
+    #前日最高价<大前日最高价, 前日最低价 < 大前日最低价
+    p_ftor5 = merge['high_' + t_b2] < merge['high_' + t_b3]
+    p_ftor6 = merge['low_' + t_b2] < merge['low_' + t_b3]
+
+    #今日涨幅小于4%
+    p_ftor7 = merge['pct_chg_' + t] < 3.6
+    #今日最低价小于昨日收盘价， 避免跳空
+    p_ftor8 = merge['low_' + t] <= merge['pre_close']
+
+    # p_ftor7 = abs(merge['pct_chg_' + t_b1]) < 1.0
+    # p_ftor8 = abs(merge['pct_chg_' + t]) < 0.4
+    # p_ftor9 = (abs(merge['open'] - merge['close']) /merge['open']) < 0.002
+
+
+    factor_screen_selected = merge[p_ftor1 & p_ftor2 & p_ftor3 & p_ftor4 & p_ftor5 & p_ftor6 & p_ftor7 &p_ftor8]
+
     # factor_screen_selected.to_excel('factor_screen_selected_' + t + '.xlsx')
 
     return factor_screen_selected
@@ -175,19 +222,19 @@ def factor_screen():  # 按策略筛选换手率
 def get_ma_filter():
     ma_filter = pd.DataFrame()
     for ts_code in factor_screen_selected['ts_code']:
-        print( "正在计算:", ts_code )
-        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[10] )[
-            ['ts_code', 'close', 'ma10']]
+        print( "正在计算:", ts_code)
+        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20] )[
+            ['ts_code', 'close','ma20']]
         ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的10日均线数据
     print( "策略计算结束！！！" )
 
     # 筛选运行在10日均线的股票
-    fator = (ma_filter.close >= ma_filter.ma10)
+    fator = (ma_filter.close >= ma_filter.ma20)
     ma_filter = ma_filter[fator]
 
     final_selected = pd.merge( ma_filter, factor_screen_selected, on='ts_code', sort=False,
                                left_index=False, right_index=False, how='left' )
-    final_selected.to_excel( 'final_selected_' + t + '.xlsx' )
+    # final_selected.to_excel( 'final_selected_' + t + '.xlsx' )
 
     return final_selected
 
