@@ -32,7 +32,7 @@ ts.set_token('33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668')
 pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta(days=0))
+t = (datetime.date.today() - datetime.timedelta(days=1))
 t_b1 = t - datetime.timedelta(days=1)
 t_b2 = t - datetime.timedelta(days=2)
 t_b3 = t - datetime.timedelta(days=5)
@@ -239,7 +239,7 @@ def get_ma_filter() :
         print("正在计算:", ts_code)
         df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20])[
             ['ts_code', 'close', 'ma20']]
-        ma_filter = ma_filter.append(df.head(1))  # 取第一行为今天的10日均线数据
+        ma_filter = ma_filter.append(df.head(1))  # 取第一行为今天的日均线数据
     print("策略计算结束！！！")
 
     # 筛选运行在10日均线的股票
@@ -258,6 +258,42 @@ def get_ma_filter() :
     return final_selected
 
 
+'''
+一根阳线穿过5，10，20，30，60日均线
+
+'''
+
+def cross_all_average():
+    k_average = pd.DataFrame()
+    for ts_code in merge['ts_code'].head(len(merge)) :
+        print("正在计算:", ts_code)
+        df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date='20170227', end_date=t, ma=[5, 10, 20, 30, 60])[
+            ['ts_code', 'close', 'low','ma5', 'ma10', 'ma20', 'ma30', 'ma60']]
+        k_average = k_average.append(df.head(1))  # 取第一行为今天的日均线数据
+    print("均线策略计算结束！！！")
+
+    k_factor1 = k_average['close'] > k_average['ma5']
+    k_factor2 = k_average['close'] > k_average['ma10']
+    k_factor3 = k_average['close'] > k_average['ma20']
+    k_factor4 = k_average['close'] > k_average['ma30']
+    k_factor5 = k_average['close'] > k_average['ma60']
+
+    k_factor6 = k_average['low'] < k_average['ma5']
+    k_factor7 = k_average['low'] < k_average['ma10']
+    k_factor8 = k_average['low'] < k_average['ma20']
+    k_factor9 = k_average['low'] < k_average['ma30']
+    k_factor10 = k_average['low'] < k_average['ma60']
+
+    k_average_selecte = k_average[k_factor1 & k_factor2 & k_factor3 & k_factor4 & k_factor5
+                                  & k_factor6 &k_factor7 & k_factor8 & k_factor9 & k_factor10]
+
+    k_average_selecte.to_excel( 'k_average_selecte' + t + '.xlsx' )
+    k_average.to_excel( 'k_average' + t + '.xlsx' )
+
+    return k_average,k_average_selecte
+
+
+
 if __name__ == "__main__" :
     merge_t_basic = get_today_basic()
     turnover_rate_before = get_turnover_rate_before()
@@ -266,3 +302,4 @@ if __name__ == "__main__" :
     # factor_screen_selected = tor_factor_screen()
     factor_screen_selected = p_factor_screen()
     final_selected = get_ma_filter()
+    k_average,k_average_selecte = cross_all_average()
