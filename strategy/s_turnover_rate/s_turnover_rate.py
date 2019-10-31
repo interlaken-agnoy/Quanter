@@ -265,12 +265,12 @@ def get_ma_filter() :
 
 def cross_all_average():
     k_average = pd.DataFrame()
-    for ts_code in merge['ts_code'].head(len(merge)) :
-        print("正在计算:", ts_code)
+    for ts_code in merge['ts_code'].head(len(merge)):
+        print("正在计算穿均线策略:", ts_code)
         df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date='20170227', end_date=t, ma=[5, 10, 20, 30, 60])[
             ['ts_code', 'close', 'low','ma5', 'ma10', 'ma20', 'ma30', 'ma60']]
         k_average = k_average.append(df.head(1))  # 取第一行为今天的日均线数据
-    print("均线策略计算结束！！！")
+    print("穿均线策略计算结束！！！")
 
     k_factor1 = k_average['close'] > k_average['ma5']
     k_factor2 = k_average['close'] > k_average['ma10']
@@ -284,15 +284,17 @@ def cross_all_average():
     k_factor9 = k_average['low'] < k_average['ma30']
     k_factor10 = k_average['low'] < k_average['ma60']
 
-    k_average_selecte = k_average[k_factor1 & k_factor2 & k_factor3 & k_factor4 & k_factor5
+    k_average_selected = k_average[k_factor1 & k_factor2 & k_factor3 & k_factor4 & k_factor5
                                   & k_factor6 &k_factor7 & k_factor8 & k_factor9 & k_factor10]
 
-    k_average_selecte.to_excel( 'k_average_selecte' + t + '.xlsx' )
-    k_average.to_excel( 'k_average' + t + '.xlsx' )
+    #k_average_selected.to_excel( 'k_average_selected' + t + '.xlsx' )  #满足一阳穿均线的条件
 
-    return k_average,k_average_selecte
+    k_average_selected = pd.merge(k_average_selected, merge_t_basic, on='ts_code', sort=False,
+                              left_index=False, right_index=False, how='left')
 
-
+    k_average_selected = k_average_selected['ts_code', 'name', 'area', 'industry', 'close_x', 'close_y', 'trade_date',
+                                          'pe','pe_ttm','turnover_rate_' + t, 'pct_chg_' + t, 'pct_chg_' + t_n1,]
+    return k_average_selected
 
 if __name__ == "__main__" :
     merge_t_basic = get_today_basic()
@@ -302,4 +304,4 @@ if __name__ == "__main__" :
     # factor_screen_selected = tor_factor_screen()
     factor_screen_selected = p_factor_screen()
     final_selected = get_ma_filter()
-    k_average,k_average_selecte = cross_all_average()
+    k_average_selected = cross_all_average()
