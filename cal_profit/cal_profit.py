@@ -28,9 +28,12 @@ columns = ['币种', '证券名称', '成交日期', '成交价格', '成交数�
 for i in range( len( sheets ) ):
     sheet = pd.read_excel( path, sheet_name=i, index=True,
                            converters={
-                               "成交日期": lambda x: pd.to_datetime( x, format="%y/%m/%d", errors='coerce' ),
-                               "成交数量": lambda x: pd.to_numeric( x, errors='coerce' ),
-                               "发生金额": lambda x: pd.to_numeric( x, errors='coerce' )
+                            "成交日期": lambda x: pd.to_datetime( x, format="%y/%m/%d", errors='coerce' ),
+                            "成交数量": lambda x: pd.to_numeric( x, errors='coerce' ),
+                            "发生金额": lambda x: pd.to_numeric( x, errors='coerce' ),
+                            "手续费": lambda x: pd.to_numeric( x, errors='coerce' ),
+                            "印花税": lambda x: pd.to_numeric( x, errors='coerce' ),
+                            "过户费": lambda x: pd.to_numeric( x, errors='coerce' )
                            } )
     sheet_merge = sheet_merge.append( sheet, sort=False )
 
@@ -45,7 +48,9 @@ columns_number = clean_data.shape[1]  # 列数
 
 deposit = clean_data["发生金额"].groupby( clean_data['业务名称'] == "银行转存" ).sum()
 withdrawal = clean_data["发生金额"].groupby( clean_data['业务名称'] == "银行转取" ).sum()
-
+serverce_charge = clean_data["手续费"].sum()
+stamp_duty = clean_data["印花税"].sum()
+transfer_fee = clean_data["过户费"].sum()
 
 
 # 计算每只股票的盈利情况
@@ -63,16 +68,18 @@ profit.index = range( len( profit ) )  # 重新排序
 
 # 导出盈利列表
 profit.to_excel( "profit.xlsx" )
+print( '2017年2月27日招商证券账户已清仓股票盈亏明细：', )
+print( profit )
+
+# 已全部清仓的股票
+clearance_stocks = profit[~profit['证券名称'].str.contains( '中通国脉|中海达|顺灏股份')]
+clearance_profit = clearance_stocks['盈利'].sum()
+print( '已清仓总盈利', clearance_profit )
 
 # 输出显示
 print( "转存总金额：", deposit[True])
 print( "转取总金额：", withdrawal[True] )
 print( "净入金金额：", deposit[True] + withdrawal[True] )
-print( profit )
-
-# 已全部清仓的股票
-clearance_stocks = profit[~profit['证券名称'].str.contains( '中通国脉|中海达|顺灏股份|华菱精工')]
-clearance_profit = clearance_stocks['盈利'].sum()
-print( '已清仓盈利', clearance_profit )
-
-
+print( '手续费', serverce_charge )
+print( '印花税', stamp_duty )
+print( '过户费', transfer_fee )
