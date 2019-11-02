@@ -87,3 +87,55 @@ share()
 
 
 
+import threading
+from queue import Queue
+import datetime
+import pandas as pd
+import tushare as ts
+
+
+pd.set_option( 'display.max_columns', None )  # 显示所有列
+pd.set_option( 'display.max_rows', None )  # 显示所有行
+pd.set_option( 'max_colwidth', 200 )  # 设置value的显示长度为100，默认为50
+
+ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
+pro = ts.pro_api()
+
+# 设置时间，t为今日，t_b1为昨日
+t = (datetime.date.today() - datetime.timedelta( days=1 ))
+t = t.strftime( "%Y%m%d" )
+
+name_list = pro.stock_basic( exchange='', list_status='L', fields='ts_code,name, area, industry' )
+
+data = [range(0,500,1), range(500,1000,1), range(1000,1500,1), range(1500,2000,1)]
+def s_cross_all_average(row,q):
+    k_average = pd.DataFrame()
+    for ts_code in name_list['ts_code'][0:500]:
+        print( "正在计算穿均线策略:", ts_code )
+        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20170227', end_date=t, ma=[5, 10, 20, 30, 60] )[
+            ['ts_code', 'close', 'low', 'ma5', 'ma10', 'ma20', 'ma30', 'ma60']]
+        k_average = k_average.append( df.head( 1 ) )  # 取第一行为今天的日均线数据
+    q.put(k_average)
+    print( "穿均线策略计算结束！！！" )
+
+def multithreading():
+    q = Queue()
+    threads = []
+    for i in range( 4 ):
+        t = threading.Thread( target=s_cross_all_average, args=(data[i],q ))
+        t.start()
+        threads.append( t )
+    for thread in threads:
+        thread.join()
+
+    results = pd.DataFrame()
+    for _ in range( 4 ):
+        results.append( q.get() )
+
+    print( "穿均线策略计算结束！！！" )
+
+if __name__ == "__main__":
+    multithreading()
+
+
+
