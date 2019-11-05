@@ -33,15 +33,15 @@ ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta( days=3 ))
-t_b1 = t - datetime.timedelta( days=1 )
-t_b2 = t - datetime.timedelta( days=2 )
-t_b3 = t - datetime.timedelta( days=3 )
-t_b4 = t - datetime.timedelta( days=4 )
+t = (datetime.date.today() - datetime.timedelta( days=1 ))
+t_b1 = t - datetime.timedelta( days=3 )
+t_b2 = t - datetime.timedelta( days=4 )
+t_b3 = t - datetime.timedelta( days=5 )
+t_b4 = t - datetime.timedelta( days=6 )
 t_b5 = t - datetime.timedelta( days=7 )
 
 # t_n1为下一个交易日
-t_n1 = t + datetime.timedelta( days=3 )
+t_n1 = t + datetime.timedelta( days=1 )
 t_n1 = t_n1.strftime( "%Y%m%d" )
 
 # 转为tushare格式的时间
@@ -54,7 +54,7 @@ t_b5 = t_b5.strftime( "%Y%m%d" )
 
 trade_data = [t_b1, t_b2, t_b3, t_b4, t_b5]
 
-turnover_rarion_bound = {"今日换手率下限": 3,
+turnover_rarion_bound = {"今日换手率下限": 4.0,
                          "今日换手率上限": 20,
                          '今日涨跌幅下限': -4,
                          '今日涨跌幅上限': 4,
@@ -63,8 +63,8 @@ turnover_rarion_bound = {"今日换手率下限": 3,
                          '股价(元)下限': 5,
                          '市盈率(pe)上限': 200,
                          '市盈率(pe)下限': 10,
-                         '市盈率(pe_ttm)下限': 0,
-                         '昨日换手率': 3,
+                         '市盈率(pe_ttm)下限': 10,
+                         '昨日换手率': 4.0,
                          '前日换手率': 6}
 
 # 获取股票代码，名字
@@ -74,11 +74,11 @@ name_list = pro.stock_basic( exchange='', list_status='L', fields='ts_code,name,
 # 获取今日收盘数据
 def get_today_basic():  # 得到今日收盘数据表
     t_basic = pro.daily_basic( ts_code='', trade_date=t,
-                               fields='ts_code, close,trade_date, pe, pe_ttm, pb, float_share, turnover_rate' )
+                               fields='ts_code, close,trade_date, pe, pe_ttm, pb, float_share, turnover_rate_f' )
 
     merge_t_basic = pd.merge( name_list, t_basic, on='ts_code', sort=False,
                               left_index=False, right_index=False, how='left' )
-    merge_t_basic.rename( columns={'turnover_rate': 'turnover_rate_' + t}, inplace=True )
+    merge_t_basic.rename( columns={'turnover_rate_f': 'turnover_rate_f_' + t}, inplace=True )
 
     # 获取昨日涨幅
     t_b1_pctchg = pro.daily( ts_code='', trade_date=t_b1,  # 为了获取下一个交易日的涨幅
@@ -114,14 +114,14 @@ def get_turnover_rate_before():
     turnover_rate_before = pd.DataFrame()
     for str in trade_data:
         str_basic = pro.daily_basic( ts_code='', trade_date=str,
-                                     fields='ts_code, turnover_rate' )
+                                     fields='ts_code, turnover_rate_f' )
         if (str == t_b1):
             turnover_rate_before = pd.merge( merge_t_basic, str_basic, on='ts_code', sort=False,
                                              left_index=False, right_index=False, how='inner' )
         else:
             turnover_rate_before = pd.merge( turnover_rate_before, str_basic, on='ts_code', sort=False,
                                              left_index=False, right_index=False, how='inner' )
-        turnover_rate_before.rename( columns={'turnover_rate': 'turnover_rate_' + str}, inplace=True )
+        turnover_rate_before.rename( columns={'turnover_rate_f': 'turnover_rate_f_' + str}, inplace=True )
 
     # turnover_rate_before.to_excel( 'turnover_rate_before.xlsx' )
 
@@ -162,22 +162,22 @@ def merge_tor_high_low():
 
 '''
 
-根据换手率筛选策略
+根据自由流通股换手率筛选策略
 
 '''
 
 
 def s_tor_factor():
     # 换手率 t>t_1, t-1<t-2<t-3<t-4
-    ftor1 = merge['turnover_rate_' + t] >= merge['turnover_rate_' + t_b1]
+    ftor1 = merge['turnover_rate_f_' + t] >= merge['turnover_rate_f_' + t_b1]
 
-    ftor2 = merge['turnover_rate_' + t_b1] <= merge['turnover_rate_' + t_b2]
-    ftor3 = merge['turnover_rate_' + t_b2] <= merge['turnover_rate_' + t_b3]
-    ftor4 = merge['turnover_rate_' + t_b3] <= merge['turnover_rate_' + t_b4]
-    # ftor5 = merge['turnover_rate_' + t_b4] <= merge['turnover_rate_' + t_b5]
+    ftor2 = merge['turnover_rate_f_' + t_b1] <= merge['turnover_rate_f_' + t_b2]
+    ftor3 = merge['turnover_rate_f_' + t_b2] <= merge['turnover_rate_f_' + t_b3]
+    ftor4 = merge['turnover_rate_f_' + t_b3] <= merge['turnover_rate_f_' + t_b4]
+    # ftor5 = merge['turnover_rate_f_' + t_b4] <= merge['turnover_rate_f_' + t_b5]
 
-    ftor6 = merge['turnover_rate_' + t] >= turnover_rarion_bound['今日换手率下限']
-    ftor7 = merge['turnover_rate_' + t_b1] >= turnover_rarion_bound["昨日换手率"]
+    ftor6 = merge['turnover_rate_f_' + t] >= turnover_rarion_bound['今日换手率下限']
+    ftor7 = merge['turnover_rate_f_' + t_b1] >= turnover_rarion_bound["昨日换手率"]
 
     # 基本面
     b_case1 = merge.close <= turnover_rarion_bound['股价(元)上限']
@@ -189,7 +189,7 @@ def s_tor_factor():
     s_tor_factor = merge[ftor1 & ftor2 & ftor3 & ftor4 & ftor6 & ftor7 &
                          b_case1 & b_case2 & b_case3 & b_case4 & b_case5]
 
-    s_tor_factor.to_excel( 's_tor_factor' + t + '.xlsx' )
+    # s_tor_factor.to_excel( 's_tor_factor' + t + '.xlsx' )
 
     ma_filter = pd.DataFrame()
     for ts_code in s_tor_factor['ts_code']:
@@ -211,7 +211,10 @@ def s_tor_factor():
         ['ts_code', 'name', 'area', 'industry', 'close_x', 'close_y', 'open', 'pre_close', 'trade_date',
          'pct_chg_' + t_n1, 'pe', 'pe_ttm', 'pb']]
 
-    s_tor_factor_selected.to_excel( 's_tor_factor_selected' + t + '.xlsx' )
+    s_tor_factor_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False)# 重新排序
+    s_tor_factor_selected.index = range(len(s_tor_factor_selected))
+
+    # s_tor_factor_selected.to_excel( 's_tor_factor_selected_' + t + '.xlsx' )
 
     return s_tor_factor_selected
 
@@ -230,25 +233,36 @@ def s_price_factor():
 
     # 昨日最高价<前日最高价, 昨日最低价 < 前日最低价
     p_ftor3 = merge['high_' + t_b1] <= merge['high_' + t_b2]
-    p_ftor4 = merge['low_' + t_b1] <= merge['low_' + t_b2]
+    # p_ftor4 = merge['low_' + t_b1] <= merge['low_' + t_b2]
 
     # 前日最高价<大前日最高价, 前日最低价 < 大前日最低价
     p_ftor5 = merge['high_' + t_b2] <= merge['high_' + t_b3]
-    p_ftor6 = merge['low_' + t_b2] <= merge['low_' + t_b3]
+    # p_ftor6 = merge['low_' + t_b2] <= merge['low_' + t_b3]
 
-    # 今日涨幅小于4%
+    # 今日涨幅为正
     p_ftor7 = merge['pct_chg_' + t] < 4.0
+    p_ftor8 = merge['pct_chg_' + t] > 0.5
     # 今日最低价小于昨日收盘价， 避免跳空
-    p_ftor8 = merge['low_' + t] <= merge['high_' + t_b1]
-    # 换手率大于3%, 筛选活跃股
-    p_ftor9 = merge['turnover_rate_' + t] >= turnover_rarion_bound['今日换手率下限']
+    p_ftor9 = merge['low_' + t] <= merge['high_' + t_b1]
+    # 流通股换手率连续三天大于3%, 筛选活跃股
+    p_ftor10 = merge['turnover_rate_f_' + t] >= turnover_rarion_bound['今日换手率下限']
+    p_ftor11 = merge['turnover_rate_f_' + t_b1] >= turnover_rarion_bound['昨日换手率']
 
-    # p_ftor10 = (abs(merge['open'] - merge['close']) /merge['open']) < 0.002   # 收十字星
+
+    # 基本面
+    b_case1 = merge.close <= turnover_rarion_bound['股价(元)上限']
+    b_case2 = merge.close >= turnover_rarion_bound['股价(元)下限']
+    b_case3 = merge.pe <= turnover_rarion_bound['市盈率(pe)上限']
+    b_case4 = merge.pe >= turnover_rarion_bound['市盈率(pe)下限']
+    b_case5 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
+
+    # p_ftor12 = (abs(merge['open'] - merge['close']) /merge['open']) < 0.002   # 收十字星
 
     s_price_factor = merge[
-        p_ftor1 & p_ftor2 & p_ftor3 & p_ftor4 & p_ftor5 & p_ftor8 & p_ftor7 & p_ftor8 & p_ftor9]
+        p_ftor1 & p_ftor2 & p_ftor3 & p_ftor5 & p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10 & p_ftor11
+        &b_case1 & b_case2 & b_case3 & b_case4 & b_case5]
 
-    s_price_factor.to_excel( 's_price_factor' + t + '.xlsx' )
+    # s_price_factor.to_excel( 's_price_factor' + t + '.xlsx' )
 
     ma_filter = pd.DataFrame()
     for ts_code in s_price_factor['ts_code']:
@@ -267,10 +281,13 @@ def s_price_factor():
                                         left_index=False, right_index=False, how='left' )
 
     s_price_factor_selected = s_price_factor_selected[
-        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y', 'turnover_rate_' + t, 'trade_date',
+        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y', 'turnover_rate_f_' + t, 'trade_date',
          'pct_chg_' + t_n1, 'pe', 'pe_ttm', 'pb']]
 
-    s_price_factor_selected.to_excel( 's_price_factor_selected' + t + '.xlsx' )
+    s_price_factor_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False) #重新排序
+    s_price_factor_selected.index = range(len(s_price_factor_selected))
+
+    # s_price_factor_selected.to_excel( 's_price_factor_selected_' + t + '.xlsx' )
 
     return s_price_factor_selected
 
@@ -311,8 +328,8 @@ def s_cross_all_average():
                                              left_index=False, right_index=False, how='left' )
 
     # 基本面
-    b_case1 = s_cross_all_average_selected['turnover_rate_' + t] >= turnover_rarion_bound['今日换手率下限']
-    b_case2 = s_cross_all_average_selected['turnover_rate_' + t] <= turnover_rarion_bound["今日换手率上限"]
+    b_case1 = s_cross_all_average_selected['turnover_rate_f' + t] >= turnover_rarion_bound['今日换手率下限']
+    b_case2 = s_cross_all_average_selected['turnover_rate_f' + t] <= turnover_rarion_bound["今日换手率上限"]
     b_case3 = s_cross_all_average_selected.close_x <= turnover_rarion_bound['股价(元)上限']
     b_case4 = s_cross_all_average_selected.close_x >= turnover_rarion_bound['股价(元)下限']
     b_case5 = s_cross_all_average_selected.pe <= turnover_rarion_bound['市盈率(pe)上限']
@@ -321,10 +338,14 @@ def s_cross_all_average():
 
     s_cross_all_average_selected = s_cross_all_average_selected[b_case1 & b_case5 & b_case6 & b_case7]
     s_cross_all_average_selected = s_cross_all_average_selected[
-        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y', 'turnover_rate_' + t, 'trade_date',
+        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y', 'turnover_rate_f' + t, 'trade_date',
          'pct_chg_' + t_n1, 'pe', 'pe_ttm', 'pb']]
 
-    s_cross_all_average_selected.to_excel( 's_cross_all_average_selected' + t + '.xlsx' )  # 满足一阳穿均线的条件
+    s_cross_all_average_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False)
+    s_cross_all_average_selected.index = range(len(s_cross_all_average_selected))
+
+    # s_cross_all_average_selected.to_excel( 's_cross_all_average_selected_' + t + '.xlsx' )  # 满足一阳穿均线的条件
+
     return s_cross_all_average_selected
 
 
