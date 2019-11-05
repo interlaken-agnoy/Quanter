@@ -34,7 +34,7 @@ pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
 t = (datetime.date.today() - datetime.timedelta( days=1 ))
-t_b1 = t - datetime.timedelta( days=3 )
+t_b1 = t - datetime.timedelta( days=3)
 t_b2 = t - datetime.timedelta( days=4 )
 t_b3 = t - datetime.timedelta( days=5 )
 t_b4 = t - datetime.timedelta( days=6 )
@@ -54,7 +54,7 @@ t_b5 = t_b5.strftime( "%Y%m%d" )
 
 trade_data = [t_b1, t_b2, t_b3, t_b4, t_b5]
 
-turnover_rarion_bound = {"今日换手率下限": 4.0,
+turnover_rarion_bound = {"今日换手率下限": 3.6,
                          "今日换手率上限": 20,
                          '今日涨跌幅下限': -4,
                          '今日涨跌幅上限': 4,
@@ -64,7 +64,7 @@ turnover_rarion_bound = {"今日换手率下限": 4.0,
                          '市盈率(pe)上限': 200,
                          '市盈率(pe)下限': 10,
                          '市盈率(pe_ttm)下限': 10,
-                         '昨日换手率': 4.0,
+                         '昨日换手率': 3.6,
                          '前日换手率': 6}
 
 # 获取股票代码，名字
@@ -287,7 +287,7 @@ def s_price_factor():
     s_price_factor_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False) #重新排序
     s_price_factor_selected.index = range(len(s_price_factor_selected))
 
-    # s_price_factor_selected.to_excel( 's_price_factor_selected_' + t + '.xlsx' )
+    s_price_factor_selected.to_excel( 's_price_factor_selected_' + t + '.xlsx' )
 
     return s_price_factor_selected
 
@@ -301,7 +301,7 @@ def s_price_factor():
 def s_cross_all_average():
     start_time = time.time()
     k_average = pd.DataFrame()
-    for ts_code in merge['ts_code'].head( len( merge ) ):
+    for ts_code in merge['ts_code'].head( 800):
         print( "正在计算穿均线策略:", ts_code )
         df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20170227', end_date=t, ma=[5, 10, 20, 30, 60] )[
             ['ts_code', 'close', 'low', 'ma5', 'ma10', 'ma20', 'ma30', 'ma60']]
@@ -324,25 +324,42 @@ def s_cross_all_average():
     k_average_selected = k_average[k_factor1 & k_factor2 & k_factor3 & k_factor4 & k_factor5
                                    & k_factor6 & k_factor7 & k_factor8 & k_factor9 & k_factor10]
 
-    s_cross_all_average_selected = pd.merge( k_average_selected, merge_t_basic, on='ts_code', sort=False,
+    s_cross_all_average = pd.merge( k_average_selected, merge_t_basic, on='ts_code', sort=False,
                                              left_index=False, right_index=False, how='left' )
 
-    # 基本面
-    b_case1 = s_cross_all_average_selected['turnover_rate_f' + t] >= turnover_rarion_bound['今日换手率下限']
-    b_case2 = s_cross_all_average_selected['turnover_rate_f' + t] <= turnover_rarion_bound["今日换手率上限"]
-    b_case3 = s_cross_all_average_selected.close_x <= turnover_rarion_bound['股价(元)上限']
-    b_case4 = s_cross_all_average_selected.close_x >= turnover_rarion_bound['股价(元)下限']
-    b_case5 = s_cross_all_average_selected.pe <= turnover_rarion_bound['市盈率(pe)上限']
-    b_case6 = s_cross_all_average_selected.pe >= turnover_rarion_bound['市盈率(pe)下限']
-    b_case7 = s_cross_all_average_selected.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
 
-    s_cross_all_average_selected = s_cross_all_average_selected[b_case1 & b_case5 & b_case6 & b_case7]
+    ma_filter = pd.DataFrame()
+    for ts_code in s_cross_all_average['ts_code']:
+        print( "正在筛选穿均线策略:", ts_code )
+        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t_n1, ma=[5] )[
+            ['ts_code', 'close', 'ma5']]
+        ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的日均线数据
+    print( "穿均线策略筛选完毕！！！" )
+
+    ma_fator = (ma_filter.close >= ma_filter.ma5)
+    ma_filter = ma_filter[ma_fator]
+    ma_filter = ma_filter['ts_code']
+
+    s_cross_all_average_selected = pd.merge( ma_filter, s_cross_all_average, on='ts_code', sort=False,
+                                             left_index=False, right_index=False, how='left' )
+
+    # # 基本面
+    # b_case1 = s_cross_all_average_selected['turnover_rate_f' + t] >= turnover_rarion_bound['今日换手率下限']
+    # b_case2 = s_cross_all_average_selected['turnover_rate_f' + t] <= turnover_rarion_bound["今日换手率上限"]
+    # b_case3 = s_cross_all_average_selected.close_x <= turnover_rarion_bound['股价(元)上限']
+    # b_case4 = s_cross_all_average_selected.close_x >= turnover_rarion_bound['股价(元)下限']
+    # b_case5 = s_cross_all_average_selected.pe <= turnover_rarion_bound['市盈率(pe)上限']
+    # b_case6 = s_cross_all_average_selected.pe >= turnover_rarion_bound['市盈率(pe)下限']
+    # b_case7 = s_cross_all_average_selected.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
+    #
+    # s_cross_all_average_selected = s_cross_all_average_selected[b_case1 & b_case5 & b_case6 & b_case7]
+
     s_cross_all_average_selected = s_cross_all_average_selected[
-        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y', 'turnover_rate_f' + t, 'trade_date',
+        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y', 'turnover_rate_f_' + t, 'trade_date',
          'pct_chg_' + t_n1, 'pe', 'pe_ttm', 'pb']]
 
-    s_cross_all_average_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False)
-    s_cross_all_average_selected.index = range(len(s_cross_all_average_selected))
+    # s_cross_all_average_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False)
+    # s_cross_all_average_selected.index = range(len(s_cross_all_average_selected))
 
     # s_cross_all_average_selected.to_excel( 's_cross_all_average_selected_' + t + '.xlsx' )  # 满足一阳穿均线的条件
 
@@ -354,6 +371,6 @@ if __name__ == "__main__":
     turnover_rate_before = get_turnover_rate_before()
     high_low_before = get_high_low_before()
     merge = merge_tor_high_low()
-    s_tor_factor_selected = s_tor_factor()
-    s_price_factor_selected = s_price_factor()
-    # s_cross_all_average_selected = s_cross_all_average()
+    # s_tor_factor_selected = s_tor_factor()
+    # s_price_factor_selected = s_price_factor()
+    s_cross_all_average_selected = s_cross_all_average()
