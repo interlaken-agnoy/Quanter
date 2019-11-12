@@ -33,8 +33,8 @@ ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta( days= 1))
-t_b1 = t - datetime.timedelta( days=3)
+t = (datetime.date.today() - datetime.timedelta( days= 0))
+t_b1 = t - datetime.timedelta( days=1)
 t_b2 = t - datetime.timedelta( days=4 )
 t_b3 = t - datetime.timedelta( days=5 )
 t_b4 = t - datetime.timedelta( days=6 )
@@ -205,10 +205,10 @@ def s_pure_exchang():
         ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的日均线数据
     print( "纯换手率策略计算结束！！！" )
     ma_fator1 = (ma_filter.close >= ma_filter.ma5)
-    s_price_factor_selected = pd.merge( ma_filter, s_pure_factor, on='ts_code', sort=False,
+    s_v_style_selected = pd.merge( ma_filter, s_pure_factor, on='ts_code', sort=False,
                                         left_index=False, right_index=False, how='left' )
 
-    s_pure_factor_selected = s_price_factor_selected[
+    s_pure_factor_selected = s_v_style_selected[
         ['ts_code', 'name', 'area', 'industry', 'close_x','close_y', 'open','turnover_rate_f_' + t,'pre_close', 'trade_date',
          'pct_chg_' + t_n1, 'pe', 'pe_ttm', 'pb']]
 
@@ -273,86 +273,97 @@ def s_tor_factor():
 
 '''
 
-根据收盘价格选取特定形态
+根据收盘价格选取特定形态 V 形
 
 '''
+def s_v_style():
+    v_style_bond = {
+                    '今日涨跌幅下限' : -4,
+                    '今日涨跌幅上限' : 4,
+                    '流通股本(亿)' : 3,
+                    '市盈率(pe)上限' : 80,
+                    '市盈率(pe)下限' : 20,
+                    '市盈率(pe_ttm)下限' : 20,
+                    '换手率下限' : 4,
+                    '换手率上限' : 15,
+                    '股价(元)上限' : 50,
+                    '股价(元)下限' : 5}
 
-
-def s_price_factor():
     # 今日最高价>昨日最高价, 今日最低价 > 昨日最低价
     p_ftor1 = merge['high_' + t] >= merge['high_' + t_b1]
     p_ftor2 = merge['low_' + t] >= merge['low_' + t_b1]
 
     # 昨日最高价<前日最高价, 昨日最低价 < 前日最低价
     p_ftor3 = merge['high_' + t_b1] <= merge['high_' + t_b2]
-    # p_ftor4 = merge['low_' + t_b1] <= merge['low_' + t_b2]
+    p_ftor4 = merge['low_' + t_b1] <= merge['low_' + t_b2]
 
     # 前日最高价<大前日最高价, 前日最低价 < 大前日最低价
     p_ftor5 = merge['high_' + t_b2] <= merge['high_' + t_b3]
-    # p_ftor6 = merge['low_' + t_b2] <= merge['low_' + t_b3]
+    p_ftor6 = merge['low_' + t_b2] <= merge['low_' + t_b3]
 
     # 今日涨幅为正
     p_ftor7 = merge['pct_chg_' + t] < 4.0
-    p_ftor8 = merge['pct_chg_' + t] > 0.5
+    p_ftor8 = merge['pct_chg_' + t] > 1.5
     # 今日最低价小于昨日收盘价， 避免跳空
     p_ftor9 = merge['low_' + t] <= merge['high_' + t_b1]
     # 流通股换手率连续三天大于3%, 筛选活跃股
-    p_ftor10 = merge['turnover_rate_f_' + t] >= turnover_rarion_bound['今日换手率下限']
-    p_ftor11 = merge['turnover_rate_f_' + t_b1] >= turnover_rarion_bound['昨日换手率']
-
+    p_ftor10 = merge['turnover_rate_f_' + t] >= v_style_bond['换手率下限']
+    p_ftor11 = merge['turnover_rate_f_' + t_b1] >= v_style_bond['换手率下限']
 
     # 基本面
-    b_case1 = merge.close <= turnover_rarion_bound['股价(元)上限']
-    b_case2 = merge.close >= turnover_rarion_bound['股价(元)下限']
-    b_case3 = merge.pe <= turnover_rarion_bound['市盈率(pe)上限']
-    b_case4 = merge.pe >= turnover_rarion_bound['市盈率(pe)下限']
-    b_case5 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
+    b_case1 = merge.close <= v_style_bond['股价(元)上限']
+    b_case2 = merge.close >= v_style_bond['股价(元)下限']
+    b_case3 = merge.pe <= v_style_bond['市盈率(pe)上限']
+    b_case4 = merge.pe >= v_style_bond['市盈率(pe)下限']
+    b_case5 = merge.pe_ttm >= v_style_bond['市盈率(pe_ttm)下限']
 
 
+    s_v_style = merge[p_ftor1 & p_ftor2 & p_ftor3 & p_ftor4 & p_ftor5 &
+                      p_ftor6 & p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10 & p_ftor11]
 
-    s_price_factor = merge[
-        p_ftor1 & p_ftor2 & p_ftor3 & p_ftor5 & p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10 & p_ftor11
-        &b_case1 & b_case2 & b_case3 & b_case4 & b_case5]
+    #加上基本面
+    # s_v_style = merge[
+    #     p_ftor1 & p_ftor2 & p_ftor3 & p_ftor4 & p_ftor5 & p_ftor6 &
+    #     p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10 & p_ftor11 &
+    #     b_case1 & b_case2 & b_case3 & b_case4 & b_case5]
 
     ma_filter = pd.DataFrame()
-    for ts_code in s_price_factor['ts_code']:
-        print( "正在计算价格形态策略:", ts_code )
+    for ts_code in s_v_style['ts_code']:
+        print( "正在计算V形态策略:", ts_code )
         df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20] )[
             ['ts_code', 'close', 'ma20']]
         ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的日均线数据
-    print( "价格形态策略计算结束！！！" )
+    print( "V形态策略计算结束！！！" )
 
     # 筛选运行在20日均线的股票
-
     ma_fator = (ma_filter.close >= ma_filter.ma20)
     ma_filter = ma_filter[ma_fator]
 
-    s_price_factor_selected = pd.merge( ma_filter, s_price_factor, on='ts_code', sort=False,
+    s_v_style_temp = pd.merge( ma_filter, s_v_style, on='ts_code', sort=False,
                                         left_index=False, right_index=False, how='left' )
 
-    s_price_factor_selected = s_price_factor_selected[
-        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y', 'turnover_rate_f_' + t, 'trade_date',
-         'pct_chg_' + t_n1, 'pe', 'pe_ttm', 'pb']]
+    s_v_style_selected = s_v_style_temp.copy()
+    s_v_style_selected = s_v_style_selected[['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y',
+                                             'trade_date','pct_chg_' + t,'pct_chg_' + t_n1, 'pe', 'pe_ttm']]
 
-    # s_price_factor_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False) #重新排序
-    s_price_factor_selected.index = range(len(s_price_factor_selected))
+    s_v_style_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False) #重新排序
+    s_v_style_selected.index = range(len(s_v_style_selected))
 
-    s_price_factor_selected.to_excel( 's_price_factor_selected_' + t + '.xlsx' )
+    # s_v_style_selected.to_excel( 's_price_factor_selected_' + t + '.xlsx' )
 
-    return s_price_factor_selected
+    return s_v_style_selected
 
 '''
-收盘十字星
+收盘十字星形态
 '''
 
 def s_doji_line():
     doji_line_bond = {
-                        '十字星边界': 0.005,
+                        '十字星边界': 0.002,
                         '流通股本(亿)': 3,
-                        '市盈率(pe)上限': 80,
-                        '市盈率(pe)下限': 20,
-                        '市盈率(pe_ttm)下限': 20,
-                        '市盈率(pe_ttm)下限': 20,
+                        '市盈率(pe)上限': 200,
+                        '市盈率(pe)下限': 10,
+                        '市盈率(pe_ttm)下限': 10,
                         '换手率下限': 4,
                         '换手率上限': 15,
                         '股价(元)上限': 80.0,
@@ -360,41 +371,51 @@ def s_doji_line():
 
     doji1 = merge['open'] <= merge['close']  #红K线
     doji2 = (abs(merge['open'] - merge['close']) /merge['open']) <= doji_line_bond['十字星边界']   # 收十字星
-    doji3 = merge.close <= doji_line_bond['股价(元)上限']
-    doji4 = merge.close >= doji_line_bond['股价(元)下限']
 
-    s_doji = merge[doji1 & doji2 & doji3 & doji4]
+    # 基本面
+    b_case1 = merge['turnover_rate_f_' + t] >= doji_line_bond['换手率下限']
+    b_case2 = merge['turnover_rate_f_' + t_b1] >= doji_line_bond['换手率下限']
+    b_case3 = merge.pe <= doji_line_bond['市盈率(pe)上限']
+    b_case4 = merge.pe >= doji_line_bond['市盈率(pe)下限']
+    b_case5 = merge.pe_ttm >= doji_line_bond['市盈率(pe_ttm)下限']
+    b_case6 = merge.close <= doji_line_bond['股价(元)上限']
+    b_case7 = merge.close >= doji_line_bond['股价(元)下限']
 
-    ma_filter = pd.DataFrame()
-    for ts_code in s_doji['ts_code']:
-        print( "正在计算十字星策略:", ts_code )
-        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20] )[
-            ['ts_code', 'close', 'ma20']]
-        ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的日均线数据
-    print( "十字星策略计算结束！！！" )
+    s_doji = merge[doji1 & doji2 &
+                   b_case1 & b_case2 & b_case3 & b_case4 & b_case5]
 
-    # 筛选运行在20日均线的股票
+    # ma_filter = pd.DataFrame()
+    # for ts_code in s_doji['ts_code']:
+    #     print( "正在计算十字星策略:", ts_code )
+    #     df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20] )[
+    #         ['ts_code', 'close', 'ma20']]
+    #     ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的日均线数据
+    # print( "十字星策略计算结束！！！" )
+    #
+    # # 筛选运行在20日均线的股票
+    #
+    # ma_fator = (ma_filter.close >= ma_filter.ma20)
+    # ma_filter = ma_filter[ma_fator]
+    #
+    # s_doji_temp= pd.merge( ma_filter, s_doji, on='ts_code', sort=False,
+    #                                     left_index=False, right_index=False, how='left' )
 
-    ma_fator = (ma_filter.close >= ma_filter.ma20)
-    ma_filter = ma_filter[ma_fator]
+    s_doji_selected = s_doji.copy()
 
-    s_doji_temp= pd.merge( ma_filter, s_doji, on='ts_code', sort=False,
-                                        left_index=False, right_index=False, how='left' )
-
-    s_doji_selected = s_doji_temp.copy()
     s_doji_selected.sort_values(by='pct_chg_' + t_n1, inplace= True, ascending=False) #重新排序
     s_doji_selected.index = range(len(s_doji_selected))
 
-    s_doji_selected = s_doji_selected[
-        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y',  'trade_date','pct_chg_' + t_n1, 'pe', 'pe_ttm']]
+    s_doji_selected = s_doji_selected[['name', 'ts_code', 'area', 'industry', 'close',
+                                             'trade_date','pct_chg_' + t,'pct_chg_' + t_n1, 'pe', 'pe_ttm']]
 
-    return s_doji,s_doji_selected
+    print('十字星策略计算结束！！！')
+
+    return s_doji_selected
+
 '''
 一根阳线穿过5，10，20，30，60日均线
 
 '''
-
-
 def s_cross_all_average():
     start_time = time.time()
     k_average = pd.DataFrame()
@@ -470,7 +491,7 @@ if __name__ == "__main__":
     merge = merge_tor_high_low()
     # s_pure_factor_selected = s_pure_exchang()
     # s_tor_factor_selected = s_tor_factor()
-    # s_price_factor_selected = s_price_factor()
-    s_doji,s_doji_selected = s_doji_line()
+    s_v_style_selected = s_v_style()
+    s_doji_selected = s_doji_line()
     # s_cross_all_average_selected = s_cross_all_average()
 
