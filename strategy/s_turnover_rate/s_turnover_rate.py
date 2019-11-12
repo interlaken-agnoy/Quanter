@@ -33,15 +33,15 @@ ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
 pro = ts.pro_api()
 
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta( days= 3))
-t_b1 = t - datetime.timedelta( days=1)
-t_b2 = t - datetime.timedelta( days=2 )
-t_b3 = t - datetime.timedelta( days=3 )
-t_b4 = t - datetime.timedelta( days=4 )
+t = (datetime.date.today() - datetime.timedelta( days= 1))
+t_b1 = t - datetime.timedelta( days=3)
+t_b2 = t - datetime.timedelta( days=4 )
+t_b3 = t - datetime.timedelta( days=5 )
+t_b4 = t - datetime.timedelta( days=6 )
 t_b5 = t - datetime.timedelta( days=7 )
 
 # t_n1为下一个交易日
-t_n1 = t + datetime.timedelta( days=3 )
+t_n1 = t + datetime.timedelta( days=1 )
 t_n1 = t_n1.strftime( "%Y%m%d" )
 
 # 转为tushare格式的时间
@@ -308,7 +308,7 @@ def s_price_factor():
     b_case4 = merge.pe >= turnover_rarion_bound['市盈率(pe)下限']
     b_case5 = merge.pe_ttm >= turnover_rarion_bound['市盈率(pe_ttm)下限']
 
-    # p_ftor12 = (abs(merge['open'] - merge['close']) /merge['open']) < 0.002   # 收十字星
+
 
     s_price_factor = merge[
         p_ftor1 & p_ftor2 & p_ftor3 & p_ftor5 & p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10 & p_ftor11
@@ -341,7 +341,54 @@ def s_price_factor():
 
     return s_price_factor_selected
 
+'''
+收盘十字星
+'''
 
+def s_doji_line():
+    doji_line_bond = {
+                        '十字星边界': 0.005,
+                        '流通股本(亿)': 3,
+                        '市盈率(pe)上限': 80,
+                        '市盈率(pe)下限': 20,
+                        '市盈率(pe_ttm)下限': 20,
+                        '市盈率(pe_ttm)下限': 20,
+                        '换手率下限': 4,
+                        '换手率上限': 15,
+                        '股价(元)上限': 80.0,
+                        '股价(元)下限': 6.0}
+
+    doji1 = merge['open'] <= merge['close']  #红K线
+    doji2 = (abs(merge['open'] - merge['close']) /merge['open']) <= doji_line_bond['十字星边界']   # 收十字星
+    doji3 = merge.close <= doji_line_bond['股价(元)上限']
+    doji4 = merge.close >= doji_line_bond['股价(元)下限']
+
+    s_doji = merge[doji1 & doji2 & doji3 & doji4]
+
+    ma_filter = pd.DataFrame()
+    for ts_code in s_doji['ts_code']:
+        print( "正在计算十字星策略:", ts_code )
+        df = ts.pro_bar( ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20] )[
+            ['ts_code', 'close', 'ma20']]
+        ma_filter = ma_filter.append( df.head( 1 ) )  # 取第一行为今天的日均线数据
+    print( "十字星策略计算结束！！！" )
+
+    # 筛选运行在20日均线的股票
+
+    ma_fator = (ma_filter.close >= ma_filter.ma20)
+    ma_filter = ma_filter[ma_fator]
+
+    s_doji_temp= pd.merge( ma_filter, s_doji, on='ts_code', sort=False,
+                                        left_index=False, right_index=False, how='left' )
+
+    s_doji_selected = s_doji_temp.copy()
+    s_doji_selected.sort_values(by='pct_chg_' + t_n1, inplace= True, ascending=False) #重新排序
+    s_doji_selected.index = range(len(s_doji_selected))
+
+    s_doji_selected = s_doji_selected[
+        ['name', 'ts_code', 'area', 'industry', 'close_x', 'close_y',  'trade_date','pct_chg_' + t_n1, 'pe', 'pe_ttm']]
+
+    return s_doji,s_doji_selected
 '''
 一根阳线穿过5，10，20，30，60日均线
 
@@ -424,4 +471,6 @@ if __name__ == "__main__":
     # s_pure_factor_selected = s_pure_exchang()
     # s_tor_factor_selected = s_tor_factor()
     # s_price_factor_selected = s_price_factor()
-    s_cross_all_average_selected = s_cross_all_average()
+    s_doji,s_doji_selected = s_doji_line()
+    # s_cross_all_average_selected = s_cross_all_average()
+
