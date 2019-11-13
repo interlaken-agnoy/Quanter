@@ -32,16 +32,26 @@ pd.set_option('max_colwidth', 200)  # 设置value的显示长度为100，默认�
 ts.set_token('33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668')
 pro = ts.pro_api()
 
+#收盘Tushare已有数据
+Mon = [0,3,4,5,6,7,1]
+Tue = [0,1,4,5,6,7,1]
+Wen = [0,1,2,5,6,7,1]
+Thru = [0,1,2,3,6,7,1]
+Fri = [0,1,2,3,4,7,3]
+
+TODAY = datetime.date.today() - datetime.timedelta(days=0)
+DAYS = Wen.copy()
+
 # 设置时间，t为今日，t_b1为昨日
-t = (datetime.date.today() - datetime.timedelta(days=0))
-t_b1 = t - datetime.timedelta(days=1)
-t_b2 = t - datetime.timedelta(days=4)
-t_b3 = t - datetime.timedelta(days=5)
-t_b4 = t - datetime.timedelta(days=6)
-t_b5 = t - datetime.timedelta(days=7)
+t = (TODAY - datetime.timedelta(days=DAYS[0]))
+t_b1 = t - datetime.timedelta(days=DAYS[1])
+t_b2 = t - datetime.timedelta(days=DAYS[2])
+t_b3 = t - datetime.timedelta(days=DAYS[3])
+t_b4 = t - datetime.timedelta(days=DAYS[4])
+t_b5 = t - datetime.timedelta(days=DAYS[5])
 
 # t_n1为下一个交易日
-t_n1 = t + datetime.timedelta(days=1)
+t_n1 = t + datetime.timedelta(days=DAYS[6])
 t_n1 = t_n1.strftime("%Y%m%d")
 
 # 转为tushare格式的时间
@@ -491,4 +501,4 @@ if __name__ == "__main__" :
     s_tor_factor_selected = s_tor_factor()
     s_v_style_selected = s_v_style()
     s_doji_selected = s_doji_line()
-    # s_cross_all_average_selected = s_cross_all_average()
+    s_cross_all_average_selected = s_cross_all_average()
