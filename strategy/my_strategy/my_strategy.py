@@ -39,8 +39,8 @@ Wen = [0,1,2,5,6,7,1]
 Thru = [0,1,2,3,6,7,1]
 Fri = [0,1,2,3,4,7,3]
 
-TODAY = datetime.date.today() - datetime.timedelta(days=0)
-DAYS = Wen.copy()
+TODAY = datetime.date.today() - datetime.timedelta(days=2)
+DAYS = Fri.copy()
 
 # 设置时间，t为今日，t_b1为昨日
 t = (TODAY - datetime.timedelta(days=DAYS[0]))
@@ -169,7 +169,7 @@ def s_pure_exchang() :
         '市盈率(pe)上限' : 150,
         '市盈率(pe)下限' : 10,
         '市盈率(pe_ttm)下限' : 10,
-        '换手率下限' : 6,
+        '换手率下限' : 9,
         '换手率上限' : 30,
         '股价(元)上限' : 60.0,
         '股价(元)下限' : 18.0}
