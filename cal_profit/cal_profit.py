@@ -72,7 +72,7 @@ print( '2017年2月27日招商证券账户已清仓股票盈亏明细：', )
 print( profit )
 
 # 已全部清仓的股票
-clearance_stocks = profit[~profit['证券名称'].str.contains( '中通国脉|凯普生物|惠威科技！瀛通通讯')]
+clearance_stocks = profit[~profit['证券名称'].str.contains( '四川金顶|华培动力|神州数码|我武生物|麦克奥迪')]
 clearance_profit = clearance_stocks['盈利'].sum()
 print( '已清仓总盈利', clearance_profit )
 
