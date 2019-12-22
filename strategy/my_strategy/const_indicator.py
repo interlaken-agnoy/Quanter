@@ -17,18 +17,18 @@ pd.set_option( 'display.max_columns', None )  # 显示所有列
 pd.set_option( 'display.max_rows', None )  # 显示所有行
 pd.set_option( 'max_colwidth', 200 )  # 设置value的显示长度为100，默认为50
 
-ts.set_token( '33c9dc31a0d5e549125e0322e6142137e2687212b171f8dde4f21668' )
+ts.set_token( 'eddbdef67162282fc209ada482201e0378e6fdd1e2a0b0024a97db0d' )
 pro = ts.pro_api()
 
-today = datetime.date.today() - datetime.timedelta(days=1)
+today = datetime.date.today() - datetime.timedelta(days=2)
 today = today.strftime( "%Y%m%d" )
 
 # 选取财报时间段
 START_DATA = '20190601'
-END_DATA = '20190731'
+END_DATA = '20190930'
 
 # 获取股票代码
-share_list = pro.stock_basic( exchange='', list_status='L', fields='ts_code,symbol,name,industry,list_date' )
+share_list = pro.stock_basic( exchange='', list_status='L', fields='ts_code,name,industry,area,list_date' )
 
 num = len( share_list )
 print( "上市公司总数：%d" % num )
@@ -40,7 +40,7 @@ def get_fina_indicator():
     index = int()
     for _ in range(3):
         try:
-            for str in list( share_list['ts_code'] ):
+            for str in list( share_list['ts_code']):
                 temp = pro.fina_indicator_vip( ts_code=str, start_date=START_DATA, end_date=END_DATA,
                                                fields='ts_code, eps, dt_eps, bps, roe, roe_dt, roe_yearly,  q_profit_yoy,'
                                                       'q_profit_qoq, q_netprofit_yoy, q_netprofit_qoq,'
@@ -78,5 +78,5 @@ def get_merge_share():
 
 if __name__ == "__main__":
     indicator = get_fina_indicator()
-    daily_basic = get_daily_basic()
-    merge_share = get_merge_share()
+    # daily_basic = get_daily_basic()
+    # merge_share = get_merge_share()
