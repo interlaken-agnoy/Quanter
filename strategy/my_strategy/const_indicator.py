@@ -20,11 +20,11 @@ pd.set_option( 'max_colwidth', 200 )  # 设置value的显示长度为100，默�
 ts.set_token( 'eddbdef67162282fc209ada482201e0378e6fdd1e2a0b0024a97db0d' )
 pro = ts.pro_api()
 
-today = datetime.date.today() - datetime.timedelta(days=2)
+today = datetime.date.today() - datetime.timedelta(days=1)
 today = today.strftime( "%Y%m%d" )
 
 # 选取财报时间段
-START_DATA = '20190601'
+START_DATA = '20180601'
 END_DATA = '20190930'
 
 # 获取股票代码
@@ -42,8 +42,8 @@ def get_fina_indicator():
         try:
             for str in list( share_list['ts_code']):
                 temp = pro.fina_indicator_vip( ts_code=str, start_date=START_DATA, end_date=END_DATA,
-                                               fields='ts_code, eps, dt_eps, bps, roe, roe_dt, roe_yearly,  q_profit_yoy,'
-                                                      'q_profit_qoq, q_netprofit_yoy, q_netprofit_qoq,'
+                                               fields='ts_code, eps, dt_eps, bps, roe, roe_waa,roe_dt,dp_assets_to_eqt'
+                                                      'q_profit_yoy, q_profit_qoq,'
                                                       'grossprofit_margin,q_gsprofit_margin,or_yoy, q_sales_yoy  ' )
                 indicator = indicator.append( temp )
                 index = index + 1
@@ -76,7 +76,23 @@ def get_merge_share():
     merge_share.to_excel( 'merge_share_' + today + '.xlsx' )
 
 
+def get_month_pctchange():
+    month = pd.DataFrame()
+    index = int()
+    for _ in range( 3 ):
+        try:
+            for str in list( share_list['ts_code'] )[20]:
+                print(str)
+                df = ts.pro_bar( ts_code=str, asset='E', freq = 'M',adj = 'qfq', start_date='20190101', end_date='20191130')
+                month = month.append( df )
+        except:
+            time.sleep(2)
+            print( "异常了！！！！" )
+    return month
+
+
 if __name__ == "__main__":
-    indicator = get_fina_indicator()
+    #indicator = get_fina_indicator()
     # daily_basic = get_daily_basic()
     # merge_share = get_merge_share()
+    month = get_month_pctchange()
