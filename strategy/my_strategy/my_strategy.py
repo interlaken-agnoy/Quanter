@@ -39,8 +39,8 @@ Wen = [0,1,2,5,6,7,1]
 Thru = [0,1,2,3,6,7,1]
 Fri = [0,1,2,3,4,7,3]
 
-TODAY = datetime.date.today() - datetime.timedelta(days=7)
-DAYS = Tue.copy()
+TODAY = datetime.date.today() - datetime.timedelta(days=1)
+DAYS = Wen.copy()
 
 # 设置时间，t为今日，t_b1为昨日
 t = (TODAY - datetime.timedelta(days=DAYS[0]))
@@ -78,11 +78,19 @@ def get_today_basic() :  # 得到今日收盘数据表
     merge_t_basic.rename(columns={'turnover_rate' : 'turnover_rate_' + t}, inplace=True)
 
     # 获取昨日涨幅
-    t_b1_pctchg = pro.daily(ts_code='', trade_date=t_b1,  # 为了获取下一个交易日的涨幅
+    t_b1_pctchg = pro.daily(ts_code='', trade_date=t_b1,  # 为了获取上一个交易日的涨幅
                             fields='ts_code, pct_chg')
     t_b1_pctchg.rename(columns={'pct_chg' : 'pct_chg_' + t_b1}, inplace=True)
 
     merge_t_b1_basic = pd.merge(merge_t_basic, t_b1_pctchg, on='ts_code', sort=False,
+                                left_index=False, right_index=False, how='left')
+
+    # 获取前日涨幅
+    t_b2_pctchg = pro.daily(ts_code='', trade_date=t_b2,  # 为了获取前日交易日的涨幅
+                            fields='ts_code, pct_chg')
+    t_b2_pctchg.rename(columns={'pct_chg' : 'pct_chg_' + t_b2}, inplace=True)
+
+    merge_t_b1_basic = pd.merge(merge_t_b1_basic, t_b2_pctchg, on='ts_code', sort=False,
                                 left_index=False, right_index=False, how='left')
 
     # 获取今日涨幅
@@ -299,8 +307,8 @@ def s_v_style() :
         '市盈率(pe_ttm)下限' : 20,
         '换手率下限' : 4,
         '换手率上限' : 15,
-        '股价(元)上限' : 50,
-        '股价(元)下限' : 5}
+        '股价(元)上限' : 80,
+        '股价(元)下限' : 10}
 
     # 今日最高价>昨日最高价, 今日最低价 > 昨日最低价
     p_ftor1 = merge['high_' + t] >= merge['high_' + t_b1]
@@ -365,28 +373,38 @@ def s_v_style() :
 
     return s_v_style_selected
 
+
+'''
+
+前四个交易日最低价走高
+
+'''
 def s_increase_daily():
     s_increase_daily = {
         '今日涨跌幅下限' : -4,
         '今日涨跌幅上限' : 4,
         '流通股本(亿)' : 3,
-        '市盈率(pe)上限' : 80,
-        '市盈率(pe)下限' : 20,
-        '市盈率(pe_ttm)下限' : 20,
+        '市盈率(pe)上限' : 5,
+        '市盈率(pe)下限' : 5,
+        '市盈率(pe_ttm)下限' : 10,
         '换手率下限' : 4,
         '换手率上限' : 4,
-        '股价(元)上限' : 50,
-        '股价(元)下限' : 5}
+        '股价(元)上限' : 80,
+        '股价(元)下限' : 10}
 
     p_ftor1 = merge['low_' + t] >= merge['low_' + t_b1]
     p_ftor2 = merge['low_' + t_b1] >= merge['low_' + t_b2]
     p_ftor3 = merge['low_' + t_b2] >= merge['low_' + t_b3]
     p_ftor4 = merge['pct_chg_' + t] <=s_increase_daily['今日涨跌幅上限']
-    p_ftor5 = merge.close <= s_increase_daily['股价(元)上限']
-    p_ftor6 = merge.close >= s_increase_daily['股价(元)下限']
-    p_ftor7 = merge.pe_ttm >= s_increase_daily['市盈率(pe_ttm)下限']
-
-    s_increase_daily = merge[p_ftor1 & p_ftor2 & p_ftor3 & p_ftor4 & p_ftor5 & p_ftor6 & p_ftor7]
+    p_ftor5 = merge['pct_chg_' + t_b1] <= s_increase_daily['今日涨跌幅上限']
+    p_ftor6 = merge['pct_chg_' + t_b2] <= s_increase_daily['今日涨跌幅上限']
+    # p_ftor11 = merge['pct_chg_' + t_b3] <= s_increase_daily['今日涨跌幅上限']
+    p_ftor7 = merge.close <= s_increase_daily['股价(元)上限']
+    p_ftor8 = merge.close >= s_increase_daily['股价(元)下限']
+    p_ftor9 = merge.pe >= s_increase_daily['市盈率(pe)下限']
+    p_ftor10 = merge.pe_ttm >= s_increase_daily['市盈率(pe_ttm)下限']
+    s_increase_daily = merge[p_ftor1 & p_ftor2 & p_ftor3 & p_ftor4 & p_ftor5
+                             & p_ftor6 & p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10]
 
     ma_filter = pd.DataFrame()
     for ts_code in s_increase_daily['ts_code'] :
@@ -410,7 +428,7 @@ def s_increase_daily():
     s_increase_daily_selected.sort_values(by='pct_chg_' + t_n1, inplace=True, ascending=False)  # 重新排序
     s_increase_daily_selected.index = range(len(s_increase_daily_selected))
 
-    return s_increase_daily_selected
+    return s_increase_daily,s_increase_daily_selected
 
 '''
 收盘十字星形态
@@ -548,8 +566,8 @@ def s_turnoverrate_times():
         '换手率下限' : 4.0,
         '换手率上限' : 10.0,
         '换手率放大倍数' : 3.0,
-        '股价(元)下限' : 5.0,
-        '股价(元)上限': 50.0}
+        '股价(元)下限' : 10.0,
+        '股价(元)上限': 80.0}
 
     p_ftor1 = merge.close >= s_turnoverrate_times_bond['股价(元)下限']
     p_ftor2 = merge.close <= s_turnoverrate_times_bond['股价(元)上限']
@@ -590,8 +608,8 @@ if __name__ == "__main__" :
     merge = merge_tor_high_low()
     #s_pure_exchang_selected = s_pure_exchang()
     #s_tor_factor_selected = s_tor_factor()
-    #s_v_style_selected = s_v_style()
+    s_v_style_selected = s_v_style()
     #s_doji_selected = s_doji_line()
     #s_cross_all_average_selected = s_cross_all_average()
-    s_increase_daily_selected = s_increase_daily()
+    s_increase_daily,s_increase_daily_selected = s_increase_daily()
     s_turnoverrate_times_selected = s_turnoverrate_times()
