@@ -40,7 +40,7 @@ Thru = [0,1,2,3,6,7,1]
 Fri = [0,1,2,3,4,7,3]
 
 TODAY = datetime.date.today() - datetime.timedelta(days=1)
-DAYS = Wen.copy()
+DAYS = Fri.copy()
 
 # 设置时间，t为今日，t_b1为昨日
 t = (TODAY - datetime.timedelta(days=DAYS[0]))
@@ -297,7 +297,7 @@ def s_tor_factor() :
 '''
 
 
-def s_v_style() :
+def s_v_style():
     v_style_bond = {
         '今日涨跌幅下限' : -4,
         '今日涨跌幅上限' : 4,
@@ -305,13 +305,13 @@ def s_v_style() :
         '市盈率(pe)上限' : 80,
         '市盈率(pe)下限' : 20,
         '市盈率(pe_ttm)下限' : 20,
-        '换手率下限' : 4,
-        '换手率上限' : 15,
+        '换手率下限' : 3,
+        '换手率上限' : 8,
         '股价(元)上限' : 80,
         '股价(元)下限' : 10}
 
     # 今日最高价>昨日最高价, 今日最低价 > 昨日最低价
-    p_ftor1 = merge['high_' + t] >= merge['high_' + t_b1]
+    p_ftor1 = merge['high_' + t] <= merge['high_' + t_b1]
     p_ftor2 = merge['low_' + t] >= merge['low_' + t_b1]
 
     # 昨日最高价<前日最高价, 昨日最低价 < 前日最低价
@@ -323,9 +323,9 @@ def s_v_style() :
     p_ftor6 = merge['low_' + t_b2] <= merge['low_' + t_b3]
 
     # 今日涨幅为正
-    p_ftor7 = merge['pct_chg_' + t] < 4.0
-    p_ftor8 = merge['pct_chg_' + t] > 1.5
-    # 今日最低价小于昨日收盘价， 避免跳空
+    p_ftor7 = merge['pct_chg_' + t] < 3.0
+    p_ftor8 = merge['pct_chg_' + t] > (-1.0)
+    # 今日最低价小于昨日最高价， 避免跳空
     p_ftor9 = merge['low_' + t] <= merge['high_' + t_b1]
     # 流通股换手率连续三天大于3%, 筛选活跃股
     p_ftor10 = merge['turnover_rate_' + t] >= v_style_bond['换手率下限']
@@ -338,8 +338,11 @@ def s_v_style() :
     b_case4 = merge.pe >= v_style_bond['市盈率(pe)下限']
     b_case5 = merge.pe_ttm >= v_style_bond['市盈率(pe_ttm)下限']
 
-    s_v_style = merge[p_ftor1 & p_ftor2 & p_ftor3 & p_ftor4 & p_ftor5 &
-                      p_ftor6 & p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10 & p_ftor11]
+    s_v_style = merge[p_ftor1 & p_ftor3 & p_ftor5 & p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10 & p_ftor11]
+
+    # s_v_style = merge[p_ftor1 & p_ftor2 & p_ftor3 & p_ftor4 & p_ftor5 &
+    #                   p_ftor6 & p_ftor7 & p_ftor8 & p_ftor9 & p_ftor10 & p_ftor11]
+
 
     # 加上基本面
     # s_v_style = merge[
@@ -348,7 +351,7 @@ def s_v_style() :
     #     b_case1 & b_case2 & b_case3 & b_case4 & b_case5]
 
     ma_filter = pd.DataFrame()
-    for ts_code in s_v_style['ts_code'] :
+    for ts_code in s_v_style['ts_code']:
         print("正在计算V形态策略:", ts_code)
         df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date='20190700', end_date=t, ma=[20])[
             ['ts_code', 'close', 'ma20']]
@@ -371,7 +374,7 @@ def s_v_style() :
 
     # s_v_style_selected.to_excel( 's_price_factor_selected_' + t + '.xlsx' )
 
-    return s_v_style_selected
+    return s_v_style_selected, ma_filter
 
 
 '''
@@ -437,7 +440,9 @@ def s_increase_daily():
 
 def s_doji_line() :
     doji_line_bond = {
-        '十字星边界' : 0.002,
+        '十字星边界' : 0.005,
+        '涨跌幅上界':2.0,
+        '涨跌幅下界' : 0.02,
         '流通股本(亿)' : 3,
         '市盈率(pe)上限' : 200,
         '市盈率(pe)下限' : 10,
@@ -449,6 +454,12 @@ def s_doji_line() :
 
     doji1 = merge['open'] <= merge['close']  # 红K线
     doji2 = (abs(merge['open'] - merge['close']) / merge['open']) <= doji_line_bond['十字星边界']  # 收十字星
+    doji3 = merge['pct_chg_' + t] <= doji_line_bond['涨跌幅上界'] # 避免大幅跳空
+    doji4 = merge['pct_chg_' + t] >= doji_line_bond['涨跌幅下界']  # 当日避免收阴线
+    doji5 = merge['pct_chg_' + t_n1] <= (doji_line_bond['涨跌幅上界'] + 1.0)  # 下一个交易日涨幅限制在3%以内
+    doji6 = merge['pct_chg_' + t_n1] >= (doji_line_bond['涨跌幅上界'] - 3.0)  # 下一个交易日跌幅限制1%在以内
+
+    doji7 = merge['area'].str.contains('江苏|浙江|上海|广东|深圳|北京')  #选择江浙沪广东深圳北京上市公司
 
     # 基本面
     b_case1 = merge['turnover_rate_' + t] >= doji_line_bond['换手率下限']
@@ -459,7 +470,7 @@ def s_doji_line() :
     b_case6 = merge.close <= doji_line_bond['股价(元)上限']
     b_case7 = merge.close >= doji_line_bond['股价(元)下限']
 
-    s_doji = merge[doji1 & doji2 &
+    s_doji = merge[doji1 & doji2 & doji3 & doji4 & doji5 & doji6 & doji7 &
                    b_case1 & b_case2 & b_case3 & b_case4 & b_case5]
 
     # ma_filter = pd.DataFrame()
